@@ -6,10 +6,14 @@ openSoTServer::openSoTServer()
 
 }
 
-void openSoTServer::create_problem(const yarp::sig::Vector& state, iDynUtils& robot_model, const double dT)
+void openSoTServer::create_problem(const yarp::sig::Vector& state, iDynUtils& robot_model, const double dT,
+                                   const std::string& name_space)
 {
     /** Task initialization **/
     taskPostural = boost::shared_ptr<OpenSoT::tasks::velocity::Postural>(new OpenSoT::tasks::velocity::Postural(state));
+    yPostural = boost::shared_ptr<OpenSoT::interfaces::yarp::tasks::YPostural>(
+                new OpenSoT::interfaces::yarp::tasks::YPostural(robot_model.getRobotName(), name_space, robot_model,
+                                                           taskPostural));
 
     std::list<OpenSoT::tasks::Aggregated::TaskPtr> taskList;
     taskList.push_back(taskPostural);
@@ -48,9 +52,12 @@ void openSoTServer::reset_tasks_and_constraints()
     boundsJointLimits.reset();
     boundsJointVelocity.reset();
     _bounds.reset();
+
+    /** Interface reset **/
+    yPostural.reset();
 }
 
-void openSoTServer::reset_problem(const yarp::sig::Vector& state)
+void openSoTServer::reset_problem()
 {
     reset_tasks_and_constraints();
     reset_solver();
@@ -65,4 +72,9 @@ void openSoTServer::update(const Vector &state)
 {
     _task0->update(state);
     _bounds->update(state);
+}
+
+bool openSoTServer::solve(Vector &solution)
+{
+    return _qpOasesSolver->solve(solution);
 }

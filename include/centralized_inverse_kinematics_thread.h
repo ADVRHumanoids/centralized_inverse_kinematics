@@ -2,6 +2,7 @@
 #define centralized_inverse_kinematics_THREAD_H_
 
 #include <GYM/control_thread.hpp>
+#include <openSoTServer.h>
 
 /**
  * @brief centralized_inverse_kinematics control thread
@@ -14,18 +15,25 @@ private:
      * @brief robot status
      * 
      */
-    yarp::sig::Vector _q;
-    
+    yarp::sig::Vector _q, _dq, _tau;
+
+    /**
+     * @brief _dq_ref
+     */
+    yarp::sig::Vector _dq_ref;
+
     /**
      * @brief robot model with the floating base under the left leg
      * 	      TODO remove this
      * 
      */
     iDynUtils _model_com;
-    
-    
+
+    void custom_release();
     
 public:
+
+    openSoTServer open_sot_server;
     
     /**
      * @brief constructor

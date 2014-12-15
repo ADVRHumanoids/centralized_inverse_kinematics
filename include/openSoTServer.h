@@ -6,6 +6,7 @@
 #include <OpenSoT/solvers/QPOases.h>
 #include <OpenSoT/constraints/velocity/all.h>
 #include <OpenSoT/tasks/Aggregated.h>
+#include <OpenSoT/interfaces/yarp/tasks/YPostural.h>
 
 class openSoTServer {
 private:
@@ -33,8 +34,6 @@ private:
     
     /**
      * @brief reset_tasks_and_constraints reset the current stack of tasks
-     * 
-     * @return true on success
      */
     void reset_tasks_and_constraints();
 public:
@@ -52,7 +51,7 @@ public:
      * @param state current state of the robot (eg. q, the joint position)
      * @param robot_model idynutils of a robot
      */
-    void create_problem(const yarp::sig::Vector& state , iDynUtils &robot_model, const double dT);
+    void create_problem(const yarp::sig::Vector& state , iDynUtils &robot_model, const double dT, const string &name_space);
     
     /**
      * @brief reset_solver reset the current solver
@@ -62,19 +61,27 @@ public:
     
     /**
      * @brief reset_problem reset the current problem: it resets the tasks and the solver
-     * 
-     * @param state ...
      */
-    void reset_problem( const yarp::sig::Vector& state );
+    void reset_problem();
     
     /**
      * @brief destructor
      * 
      */
-    ~openSoTServer();
+    ~openSoTServer(){}
 
-
+    /**
+     * @brief update updates tasks and constraints
+     * @param state actual state of the robot
+     */
     void update(const yarp::sig::Vector& state);
+
+    /**
+     * @brief solve solve the problem
+     * @param solution computed solution
+     * @return true if problem is solvable
+     */
+    bool solve(yarp::sig::Vector& solution);
 
     
     /****************************************************
@@ -86,6 +93,8 @@ public:
      * 
      */
     boost::shared_ptr<OpenSoT::tasks::velocity::Postural> taskPostural;
+    boost::shared_ptr<OpenSoT::interfaces::yarp::tasks::YPostural> yPostural;
+
     
     /**
      * @brief joint limits bound
