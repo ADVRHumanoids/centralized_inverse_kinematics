@@ -9,7 +9,21 @@
  **/
 class centralized_inverse_kinematics_thread : public control_thread
 {
-private:   
+private:
+    /**
+     * @brief robot status
+     * 
+     */
+    yarp::sig::Vector _q;
+    
+    /**
+     * @brief robot model with the floating base under the left leg
+     * 	      TODO remove this
+     * 
+     */
+    iDynUtils _model_com;
+    
+    
     
 public:
     
@@ -37,6 +51,7 @@ public:
      * 
      */
     virtual void run();
+
     
 };
 
