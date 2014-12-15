@@ -7,7 +7,7 @@ centralized_inverse_kinematics_thread::centralized_inverse_kinematics_thread(   
 										yarp::os::ResourceFinder rf, 
 										std::shared_ptr< paramHelp::ParamHelperServer > ph) :
     control_thread( module_prefix, rf, ph ),
-    _q( model.iDyn3_model.getNrOfDOFs(), 0.0 ),
+    _q( robot.idynutils.iDyn3_model.getNrOfDOFs(), 0.0 ),
     _model_com(get_robot_name(),
 	       get_urdf_path(),
 	       get_srdf_path() )

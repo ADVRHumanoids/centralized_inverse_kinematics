@@ -1,6 +1,11 @@
 #ifndef __OPENSOTSERVER__
 #define __OPENSOTSERVER__
 #include <yarp/sig/Vector.h>
+#include <boost/shared_ptr.hpp>
+#include <OpenSoT/tasks/velocity/all.h>
+#include <OpenSoT/solvers/QPOases.h>
+#include <OpenSoT/constraints/velocity/all.h>
+#include <OpenSoT/tasks/Aggregated.h>
 
 class openSoTServer {
 private:
@@ -15,13 +20,23 @@ private:
      * 
      */
     boost::shared_ptr<OpenSoT::Solver<yarp::sig::Matrix, yarp::sig::Vector>> _qpOasesSolver;
+
+    /**
+     * @brief task0 first stack
+     */
+    boost::shared_ptr<OpenSoT::Task<yarp::sig::Matrix, yarp::sig::Vector> > _task0;
+
+    /**
+     * @brief _bounds aggreated bounds
+     */
+    boost::shared_ptr<OpenSoT::constraints::Aggregated > _bounds;
     
     /**
-     * @brief reset_tasks reset the current stack of tasks
+     * @brief reset_tasks_and_constraints reset the current stack of tasks
      * 
      * @return true on success
      */
-    bool reset_tasks();
+    void reset_tasks_and_constraints();
 public:
     /**
      * @brief constructor
@@ -35,31 +50,32 @@ public:
      * 	      -
      * 
      * @param state current state of the robot (eg. q, the joint position)
-     * @return true on success
+     * @param robot_model idynutils of a robot
      */
-    bool create_problem( const yarp::sig::Vector& state );
+    void create_problem(const yarp::sig::Vector& state , iDynUtils &robot_model, const double dT);
     
     /**
      * @brief reset_solver reset the current solver
      * 
-     * @return true on success
      */
-    bool reset_solver();
+    void reset_solver();
     
     /**
      * @brief reset_problem reset the current problem: it resets the tasks and the solver
      * 
      * @param state ...
-     * @return true if both reset tasks and reset solver success
      */
-    bool reset_problem( const yarp::sig::Vector& state );
+    void reset_problem( const yarp::sig::Vector& state );
     
     /**
      * @brief destructor
      * 
      */
     ~openSoTServer();
-    
+
+
+    void update(const yarp::sig::Vector& state);
+
     
     /****************************************************
      *  This set of tasks will be replaced by a factory *
@@ -76,6 +92,11 @@ public:
      * 
      */
     boost::shared_ptr<OpenSoT::Constraint<yarp::sig::Matrix, yarp::sig::Vector> > boundsJointLimits;
+
+    /**
+     * @brief joint velocity limits bound
+     */
+    boost::shared_ptr<OpenSoT::Constraint<yarp::sig::Matrix, yarp::sig::Vector> > boundsJointVelocity;
 };
 
 #endif //__OPENSOTSERVER__
