@@ -1,7 +1,7 @@
 # 
 #  Copyright (C) 2014 Walkman
-#  Author: Luca Muratore
-#  email: luca.muratore@iit.it
+#  Author: 
+#  email: 
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU Lesser General Public License as published by
@@ -37,3 +37,33 @@ else()
     message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
 endif()
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}")
+
+FIND_PACKAGE(YARP REQUIRED)
+FIND_PACKAGE(idynutils REQUIRED)
+FIND_PACKAGE(GYM REQUIRED)
+FIND_PACKAGE(paramHelp REQUIRED)
+FIND_PACKAGE(kdl_codyco REQUIRED)
+FIND_PACKAGE(iDynTree REQUIRED)
+
+# add include directories
+INCLUDE_DIRECTORIES(include 
+		    ${YARP_INCLUDE_DIRS} 
+		    ${idynutils_INCLUDE_DIRS}
+		    ${GYM_INCLUDE_DIRS}
+		    ${kdl_codyco_INCLUDE_DIRS} 
+		    )
+		    
+ADD_EXECUTABLE(${PROJECT_NAME} src/centralized_inverse_kinematics_main.cpp 
+			       src/centralized_inverse_kinematics_thread.cpp
+			       )
+
+TARGET_LINK_LIBRARIES(${PROJECT_NAME} ${iDynTree_LIBRARIES}
+                                      ${YARP_LIBRARIES}
+				      ${idynutils_LIBRARIES}
+				      ${GYM_LIBRARIES}
+				      )
+
+add_subdirectory(app)
+
+install(TARGETS ${PROJECT_NAME} DESTINATION bin)

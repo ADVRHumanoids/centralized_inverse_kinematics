@@ -1,0 +1,4 @@
+#ifndef centralized_inverse_kinematics_CONSTANTS_H_
+#define centralized_inverse_kinematics_CONSTANTS_H_
+
+#endif
