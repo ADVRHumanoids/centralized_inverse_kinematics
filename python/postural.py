@@ -24,10 +24,12 @@ right_arm_names = ["RShSag", "RShLat", "RShYaw", "RElbj", "RForearmPlate", "RWrj
 right_arm_values = [0.33, -0.18, 0.0, -1.3, 0.0, 0.0, 0.0]
 
 left_leg_names = ["LHipLat", "LHipYaw", "LHipSag", "LKneeSag", "LAnkSag", "LAnkLat"]
-left_leg_values = [0.0,  0.0, -0.43, 0.86, -0.43, 0.0]
+#left_leg_values = [0.0,  0.0, -0.43, 0.86, -0.43, 0.0]
+left_leg_values = [0.0,  0.0, 0, 0, 0, 0.0]
 
 right_leg_names = ["RHipLat", "RHipYaw", "RHipSag", "RKneeSag", "RAnkSag", "RAnkLat"]
-right_leg_values = [0.0,  0.0, -0.43, 0.86,  -0.43, 0.0]
+#right_leg_values = [0.0,  0.0, -0.43, 0.86,  -0.43, 0.0]
+right_leg_values = [0.0,  0.0, 0, 0, 0, 0.0]
 
 torso_names = ["WaistLat", "WaistSag", "WaistYaw"]
 torso_values = [0.0, 0.0, 0.0]

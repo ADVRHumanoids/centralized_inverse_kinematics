@@ -29,7 +29,7 @@ void openSoTServer::create_problem(const yarp::sig::Vector& state, iDynUtils& ro
                                 robot_model.iDyn3_model.getJointBoundMax(),
                                 robot_model.iDyn3_model.getJointBoundMin()));
     boundsJointVelocity = OpenSoT::constraints::velocity::VelocityLimits::ConstraintPtr(
-                            new OpenSoT::constraints::velocity::VelocityLimits(0.3, mSecToSec(dT), state.size()));
+                            new OpenSoT::constraints::velocity::VelocityLimits(0.6, mSecToSec(dT), state.size()));
 
     /** Create sot **/
     _stack_of_tasks.push_back(_task0);
@@ -40,7 +40,7 @@ void openSoTServer::create_problem(const yarp::sig::Vector& state, iDynUtils& ro
 
     /** Solver Init **/
     _qpOasesSolver = OpenSoT::solvers::QPOases_sot::SolverPtr(
-        new OpenSoT::solvers::QPOases_sot(_stack_of_tasks, _bounds, 1E0));
+        new OpenSoT::solvers::QPOases_sot(_stack_of_tasks, _bounds, 2E2));
 }
 
 void openSoTServer::reset_tasks_and_constraints()

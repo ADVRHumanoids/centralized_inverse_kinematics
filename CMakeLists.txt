@@ -47,6 +47,7 @@ FIND_PACKAGE(kdl_codyco REQUIRED)
 FIND_PACKAGE(iDynTree REQUIRED)
 FIND_PACKAGE(PCL 1.2 REQUIRED)
 FIND_PACKAGE(OpenSoT REQUIRED)
+FIND_PACKAGE(rosconsole REQUIRED)
 
 # add include directories
 INCLUDE_DIRECTORIES(include 
@@ -56,6 +57,7 @@ INCLUDE_DIRECTORIES(include
 		    ${kdl_codyco_INCLUDE_DIRS} 
                     ${PCL_INCLUDE_DIRS}
                     ${OpenSoT_INCLUDE_DIRS}
+                    ${rosconsole_INCLUDE_DIRS}
 		    )
 
 ADD_DEFINITIONS(${PCL_DEFINITIONS})
@@ -71,6 +73,7 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME} ${iDynTree_LIBRARIES}
 				      ${GYM_LIBRARIES}
                                       ${PCL_LIBRARIES}
                                       ${OpenSoT_LIBRARIES}
+                                      ${rosconsole_LIBRARIES}
 				      )
 
 add_subdirectory(app)
