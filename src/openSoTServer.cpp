@@ -1,6 +1,8 @@
 #include <openSoTServer.h>
 #include <boost/shared_ptr.hpp>
 
+#define mSecToSec(X) (X*0.001)
+
 openSoTServer::openSoTServer()
 {
 
@@ -27,7 +29,7 @@ void openSoTServer::create_problem(const yarp::sig::Vector& state, iDynUtils& ro
                                 robot_model.iDyn3_model.getJointBoundMax(),
                                 robot_model.iDyn3_model.getJointBoundMin()));
     boundsJointVelocity = OpenSoT::constraints::velocity::VelocityLimits::ConstraintPtr(
-                            new OpenSoT::constraints::velocity::VelocityLimits(0.3, dT, state.size()));
+                            new OpenSoT::constraints::velocity::VelocityLimits(0.3, mSecToSec(dT), state.size()));
 
     /** Create sot **/
     _stack_of_tasks.push_back(_task0);

@@ -40,6 +40,7 @@ bool centralized_inverse_kinematics_thread::custom_init()
 
 void centralized_inverse_kinematics_thread::custom_release()
 {
+    std::cout<<"AAAAAAAAAAAAAAA"<<std::endl;
     open_sot_server.reset_problem();
     std::cout<<"Problem Resetted"<<std::endl;
 }
