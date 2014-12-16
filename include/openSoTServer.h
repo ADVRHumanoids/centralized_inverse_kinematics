@@ -7,6 +7,7 @@
 #include <OpenSoT/constraints/velocity/all.h>
 #include <OpenSoT/tasks/Aggregated.h>
 #include <OpenSoT/interfaces/yarp/tasks/YPostural.h>
+#include <OpenSoT/interfaces/yarp/tasks/YCartesian.h>
 
 class openSoTServer {
 private:
@@ -54,6 +55,16 @@ public:
     void create_problem(const yarp::sig::Vector& state , iDynUtils &robot_model, const double dT, const string &name_space);
     
     /**
+     * @brief create_problem create a default problem with these tasks: 
+     * 	      - 
+     * 	      -
+     * 
+     * @param state current state of the robot (eg. q, the joint position)
+     * @param robot_model idynutils of a robot
+     */
+    void create_simple_walking_problem(const yarp::sig::Vector& state , iDynUtils &robot_model, const double dT, const string &name_space);
+    
+    /**
      * @brief reset_solver reset the current solver
      * 
      */
@@ -94,6 +105,12 @@ public:
      */
     boost::shared_ptr<OpenSoT::tasks::velocity::Postural> taskPostural;
     boost::shared_ptr<OpenSoT::interfaces::yarp::tasks::YPostural> yPostural;
+    
+    boost::shared_ptr<OpenSoT::tasks::velocity::Cartesian> taskCartesianRAnkle;
+    boost::shared_ptr<OpenSoT::interfaces::yarp::tasks::YCartesian> YRAnkleCartesian;
+    
+    boost::shared_ptr<OpenSoT::tasks::velocity::Cartesian> taskCartesianLAnkle;
+    boost::shared_ptr<OpenSoT::interfaces::yarp::tasks::YCartesian> YLAnkleCartesian;
 
     
     /**

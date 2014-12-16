@@ -45,7 +45,7 @@ FIND_PACKAGE(GYM REQUIRED)
 FIND_PACKAGE(paramHelp REQUIRED)
 FIND_PACKAGE(kdl_codyco REQUIRED)
 FIND_PACKAGE(iDynTree REQUIRED)
-FIND_PACKAGE(PCL 1.2 REQUIRED)
+FIND_PACKAGE(PCL 1.7 REQUIRED)
 FIND_PACKAGE(OpenSoT REQUIRED)
 
 # add include directories
@@ -60,19 +60,69 @@ INCLUDE_DIRECTORIES(include
 
 ADD_DEFINITIONS(${PCL_DEFINITIONS})
 		    
-ADD_EXECUTABLE(${PROJECT_NAME} src/centralized_inverse_kinematics_main.cpp 
-			          src/centralized_inverse_kinematics_thread.cpp
-                               src/openSoTServer.cpp
-			          )
+ADD_EXECUTABLE(${PROJECT_NAME}  src/centralized_inverse_kinematics_main.cpp 
+			        src/centralized_inverse_kinematics_thread.cpp
+			        )
+
+add_library( OpenSoTServer SHARED src/openSoTServer.cpp )
+
+target_link_libraries( OpenSoTServer	${OpenSoT_LIBRARIES} )
 
 TARGET_LINK_LIBRARIES(${PROJECT_NAME} ${iDynTree_LIBRARIES}
                                       ${YARP_LIBRARIES}
 				      ${idynutils_LIBRARIES}
 				      ${GYM_LIBRARIES}
                                       ${PCL_LIBRARIES}
-                                      ${OpenSoT_LIBRARIES}
+                                      OpenSoTServer
 				      )
 
-add_subdirectory(app)
+####################################################################
+# use YCM to export GYM so that it can be found using find_package #
+####################################################################
+
+set(VARS_PREFIX "OPENSOTSERVER")
+
+set(OPENSOTSERVER_MAJOR_VERSION 0)
+set(OPENSOTSERVER_MINOR_VERSION 0)
+set(OPENSOTSERVER_PATCH_VERSION 1)
+set(OPENSOTSERVER_VERSION ${OPENSOTSERVER_MAJOR_VERSION}.${OPENSOTSERVER_MINOR_VERSION}.${OPENSOTSERVER_PATCH_VERSION})
+
+find_package(YCM REQUIRED)
+include(YCMDefaultDirs)
+ycm_default_dirs(${VARS_PREFIX})
+
+target_include_directories(OpenSoTServer PUBLIC "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>"
+						"$<INSTALL_INTERFACE:${${VARS_PREFIX}_INSTALL_INCLUDEDIR}>")
+
+set_target_properties(OpenSoTServer PROPERTIES VERSION ${${VARS_PREFIX}_VERSION}
+					       SOVERSION ${${VARS_PREFIX}_VERSION})
 
 install(TARGETS ${PROJECT_NAME} DESTINATION bin)
+
+install(DIRECTORY include/ 
+        DESTINATION "${${VARS_PREFIX}_INSTALL_INCLUDEDIR}"
+        FILES_MATCHING PATTERN "openSoTServer.h")
+
+install(TARGETS OpenSoTServer  
+        EXPORT OpenSoTServer
+        ARCHIVE DESTINATION "${${VARS_PREFIX}_INSTALL_BINDIR}" COMPONENT lib
+        RUNTIME DESTINATION "${${VARS_PREFIX}_INSTALL_BINDIR}" COMPONENT bin
+        LIBRARY DESTINATION "${${VARS_PREFIX}_INSTALL_LIBDIR}" COMPONENT shlib)
+        
+        #TODO to remove: understand why the lib is installed inside x86_64-linux-gnu/lib
+install(TARGETS OpenSoTServer  
+        ARCHIVE DESTINATION "lib" COMPONENT lib
+        RUNTIME DESTINATION "lib" COMPONENT bin
+        LIBRARY DESTINATION "lib" COMPONENT shlib)
+        
+set_property(GLOBAL APPEND PROPERTY ${VARS_PREFIX}_TARGETS OpenSoTServer)
+
+include(InstallBasicPackageFiles)
+install_basic_package_files(OpenSoTServer VARS_PREFIX ${VARS_PREFIX}
+                                    VERSION ${${VARS_PREFIX}_VERSION}
+                                    COMPATIBILITY SameMajorVersion
+                                    TARGETS_PROPERTY ${VARS_PREFIX}_TARGETS
+                                    NO_CHECK_REQUIRED_COMPONENTS_MACRO)
+                                    
+                                    
+add_subdirectory(app)
