@@ -22,13 +22,6 @@ private:
      */
     yarp::sig::Vector _dq_ref;
 
-    /**
-     * @brief robot model with the floating base under the left leg
-     * 	      TODO remove this
-     * 
-     */
-    iDynUtils _model_com;
-
     void custom_release();
     
 public:

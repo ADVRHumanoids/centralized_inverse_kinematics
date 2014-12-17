@@ -7,6 +7,9 @@
 #include <OpenSoT/constraints/velocity/all.h>
 #include <OpenSoT/tasks/Aggregated.h>
 #include <OpenSoT/interfaces/yarp/tasks/YPostural.h>
+#include <OpenSoT/interfaces/yarp/tasks/YCoM.h>
+#include <OpenSoT/interfaces/yarp/tasks/YCartesian.h>
+
 
 class openSoTServer {
 private:
@@ -26,6 +29,11 @@ private:
      * @brief task0 first stack
      */
     boost::shared_ptr<OpenSoT::Task<yarp::sig::Matrix, yarp::sig::Vector> > _task0;
+
+    /**
+     * @brief task1 first stack
+     */
+    boost::shared_ptr<OpenSoT::Task<yarp::sig::Matrix, yarp::sig::Vector> > _task1;
 
     /**
      * @brief _bounds aggreated bounds
@@ -51,7 +59,9 @@ public:
      * @param state current state of the robot (eg. q, the joint position)
      * @param robot_model idynutils of a robot
      */
-    void create_problem(const yarp::sig::Vector& state , iDynUtils &robot_model, const double dT, const string &name_space);
+    void create_problem(const yarp::sig::Vector& state,
+                        iDynUtils& robot_model,const double dT,
+                        const std::string& name_space);
     
     /**
      * @brief reset_solver reset the current solver
@@ -93,9 +103,33 @@ public:
      * 
      */
     boost::shared_ptr<OpenSoT::tasks::velocity::Postural> taskPostural;
-    boost::shared_ptr<OpenSoT::interfaces::yarp::tasks::YPostural> yPostural;
+    boost::shared_ptr<OpenSoT::interfaces::yarp::tasks::YPostural> YPostural;
 
-    
+    /**
+     * @brief taskCoM Center of Mass task
+     */
+    boost::shared_ptr<OpenSoT::tasks::velocity::CoM> taskCoM;
+    boost::shared_ptr<OpenSoT::interfaces::yarp::tasks::YCoM> YCoM;
+    boost::shared_ptr<OpenSoT::Constraint<yarp::sig::Matrix, yarp::sig::Vector> > boundsCoMVelocity;
+
+    /**
+     * @brief taskCartesianRSole Task on leg
+     */
+    boost::shared_ptr<OpenSoT::tasks::velocity::Cartesian> taskCartesianRSole;
+    boost::shared_ptr<OpenSoT::interfaces::yarp::tasks::YCartesian> YRSoleCartesian;
+
+    /**
+     * @brief taskCartesianWaist Task on Waist
+     */
+    boost::shared_ptr<OpenSoT::tasks::velocity::Cartesian> taskCartesianWaist;
+    boost::shared_ptr<OpenSoT::interfaces::yarp::tasks::YCartesian> YWaistCartesian;
+
+    /**
+     * @brief taskCartesianRSole Task on Torso
+     */
+    boost::shared_ptr<OpenSoT::tasks::velocity::Cartesian> taskCartesianTorso;
+    boost::shared_ptr<OpenSoT::interfaces::yarp::tasks::YCartesian> YTorsoCartesian;
+
     /**
      * @brief joint limits bound
      * 

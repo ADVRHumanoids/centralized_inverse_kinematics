@@ -12,19 +12,18 @@ centralized_inverse_kinematics_thread::centralized_inverse_kinematics_thread(   
     _dq( robot.idynutils.iDyn3_model.getNrOfDOFs(), 0.0 ),
     _tau( robot.idynutils.iDyn3_model.getNrOfDOFs(), 0.0 ),
     _dq_ref( robot.idynutils.iDyn3_model.getNrOfDOFs(), 0.0 ),
-    _model_com(get_robot_name(),
-	       get_urdf_path(),
-           get_srdf_path() ),
     open_sot_server()
     
 {
     // setting floating base under left foot
-    _model_com.iDyn3_model.setFloatingBaseLink(_model_com.left_leg.index);
+    robot.idynutils.iDyn3_model.setFloatingBaseLink(robot.idynutils.left_leg.index);
 }
 
 bool centralized_inverse_kinematics_thread::custom_init()
 {
     robot.sense(_q, _dq, _tau);
+    robot.idynutils.updateiDyn3Model(_q, true);
+
     open_sot_server.create_problem(_q, robot.idynutils, get_thread_period(), get_module_prefix());
 
     if(open_sot_server.solve(_dq_ref))
@@ -55,7 +54,6 @@ void centralized_inverse_kinematics_thread::run()
     _q += _dq_ref;
 
     /** Update Models **/
-    _model_com.updateiDyn3Model(_q,true);
     robot.idynutils.updateiDyn3Model(_q,true);
 
     /** Update OpenSoTServer **/
