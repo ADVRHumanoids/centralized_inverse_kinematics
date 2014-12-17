@@ -18,13 +18,12 @@
 #
 
 cmake_minimum_required(VERSION 2.8.12)
-if(COMMAND cmake_policy)
-    cmake_policy(SET CMP0003 OLD)
-    cmake_policy(SET CMP0005 NEW)
-    cmake_policy(SET CMP0017 NEW)
-endif(COMMAND cmake_policy)
-include(ExternalProject)
 project(centralized_inverse_kinematics)
+
+set(VARS_PREFIX "OPENSOTSERVER")
+find_package(YCM REQUIRED)
+include(YCMDefaultDirs)
+ycm_default_dirs(${VARS_PREFIX})
 
 include(CheckCXXCompilerFlag)
 check_cxx_compiler_flag("-std=c++11" COMPILER_SUPPORTS_CXX11)
@@ -80,16 +79,10 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME} ${iDynTree_LIBRARIES}
 # use YCM to export GYM so that it can be found using find_package #
 ####################################################################
 
-set(VARS_PREFIX "OPENSOTSERVER")
-
 set(OPENSOTSERVER_MAJOR_VERSION 0)
 set(OPENSOTSERVER_MINOR_VERSION 0)
 set(OPENSOTSERVER_PATCH_VERSION 1)
 set(OPENSOTSERVER_VERSION ${OPENSOTSERVER_MAJOR_VERSION}.${OPENSOTSERVER_MINOR_VERSION}.${OPENSOTSERVER_PATCH_VERSION})
-
-find_package(YCM REQUIRED)
-include(YCMDefaultDirs)
-ycm_default_dirs(${VARS_PREFIX})
 
 target_include_directories(OpenSoTServer PUBLIC "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>"
 						"$<INSTALL_INTERFACE:${${VARS_PREFIX}_INSTALL_INCLUDEDIR}>")
@@ -108,12 +101,6 @@ install(TARGETS OpenSoTServer
         ARCHIVE DESTINATION "${${VARS_PREFIX}_INSTALL_BINDIR}" COMPONENT lib
         RUNTIME DESTINATION "${${VARS_PREFIX}_INSTALL_BINDIR}" COMPONENT bin
         LIBRARY DESTINATION "${${VARS_PREFIX}_INSTALL_LIBDIR}" COMPONENT shlib)
-        
-        #TODO to remove: understand why the lib is installed inside x86_64-linux-gnu/lib
-install(TARGETS OpenSoTServer  
-        ARCHIVE DESTINATION "lib" COMPONENT lib
-        RUNTIME DESTINATION "lib" COMPONENT bin
-        LIBRARY DESTINATION "lib" COMPONENT shlib)
         
 set_property(GLOBAL APPEND PROPERTY ${VARS_PREFIX}_TARGETS OpenSoTServer)
 
