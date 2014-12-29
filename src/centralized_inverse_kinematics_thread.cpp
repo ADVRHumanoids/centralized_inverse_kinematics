@@ -16,7 +16,8 @@ centralized_inverse_kinematics_thread::centralized_inverse_kinematics_thread(   
     
 {
     // setting floating base under left foot
-    robot.idynutils.iDyn3_model.setFloatingBaseLink(robot.idynutils.left_leg.index);
+    robot.idynutils.updateiDyn3Model(_q, true);
+    robot.idynutils.setFloatingBaseLink(robot.idynutils.left_leg.end_effector_name);
 }
 
 bool centralized_inverse_kinematics_thread::custom_init()

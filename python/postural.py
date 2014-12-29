@@ -41,7 +41,7 @@ if __name__ == '__main__':
             continue
 
     Waist_pos_d = kdl.Frame()
-    Waist_pos_d.p = kdl.Vector(world_pos_Waist[0], world_pos_Waist[1], 1.0)#1.05
+    Waist_pos_d.p = kdl.Vector(world_pos_Waist[0], world_pos_Waist[1]-1.1, 1.05)#1.05
 
 
     bottle_Waist = port_Waist.prepare()
@@ -51,9 +51,11 @@ if __name__ == '__main__':
 
     left_arm_names = ["LShSag", "LShLat", "LShYaw", "LElbj", "LForearmPlate", "LWrj1", "LWrj2"]
     left_arm_values = [0.33,     0.18,     0.0,     -1.3,     0.0,             0.0,     0.0]
+#    left_arm_values = [0.33,     0.0,     0.0,     -1.3,     0.0,             0.0,     0.0]
 
     right_arm_names = ["RShSag", "RShLat", "RShYaw", "RElbj", "RForearmPlate", "RWrj1", "RWrj2"]
     right_arm_values = [0.33,    -0.18,    0.0,      -1.3,     0.0,             0.0,     0.0]
+ #   right_arm_values = [0.33,    0.0,    0.0,      -1.3,     0.0,             0.0,     0.0]
 
     #torso_names = ["WaistLat", "WaistSag", "WaistYaw"]
     #torso_values = [0.0, 0.0, 0.0]
@@ -65,5 +67,5 @@ if __name__ == '__main__':
     bottle_posture.clear()
     pYTask.position_joint_msg(final_name_list , final_value_list, bottle_posture)
 
-    port_posture.write()
+    #port_posture.write()
 
