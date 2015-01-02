@@ -1,6 +1,7 @@
 #include <yarp/os/all.h>
 #include <GYM/generic_module.hpp>
 #include <cstdlib>
+#include <ros/ros.h>
 
 #include "centralized_inverse_kinematics_module.hpp"
 
@@ -17,6 +18,7 @@ int main(int argc, char* argv[])
     }
     // yarp network initialization
     yarp.init();
+    ros::init(argc, argv, "centralized_inverse_kinematics");
 
     // create rf
     yarp::os::ResourceFinder rf;

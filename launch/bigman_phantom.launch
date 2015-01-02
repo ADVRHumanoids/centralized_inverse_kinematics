@@ -1,0 +1,20 @@
+<launch>
+       
+    <!-- start robot state publisher -->
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher_phantom" output="screen" >
+        <param name="tf_prefix" type="string" value="phantom" />
+        <remap from="joint_states" to="centralized_inverse_kinematics/bigman/joint_command"/>
+        <param name="publish_frequency" type="double" value="50.0" />
+    </node> 
+
+    <node pkg="tf" type="static_transform_publisher" name="phantom_static_transform" args="0 0 0 0 0 0 /world /phantom/world 50"/>
+ 	
+     <node pkg="robot_state_publisher_ext" type="robot_state_publisher_ext_node" name="robot_state_publisher_ext_phantom" output="screen" >
+       <param name="tf_prefix" type="string" value="phantom" />
+       <param name="robot_name" type="string" value="bigman" />
+       <remap from="joint_states" to="centralized_inverse_kinematics/bigman/joint_command"/>
+       <param name="urdf_path" type="string" value="$(find bigman_urdf)/urdf/bigman.urdf" />
+       <param name="srdf_path" type="string" value="$(find bigman_srdf)/srdf/bigman.srdf" />
+     </node>
+
+</launch>

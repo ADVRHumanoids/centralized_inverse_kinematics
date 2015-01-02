@@ -5,10 +5,10 @@
 
 openSoTServer::openSoTServer()
 {
-
+    _problem = boost::shared_ptr<ik_problem>(new ik_problem);
 }
 
-void openSoTServer::create_problem(const yarp::sig::Vector& state, iDynUtils& robot_model, const double dT,
+boost::shared_ptr<openSoTServer::ik_problem> openSoTServer::create_problem(const yarp::sig::Vector& state, iDynUtils& robot_model, const double dT,
                                    const std::string& name_space)
 {
     ///TASK RSOLE
@@ -58,29 +58,23 @@ void openSoTServer::create_problem(const yarp::sig::Vector& state, iDynUtils& ro
                 new OpenSoT::constraints::velocity::CoMVelocity(yarp::sig::Vector(3,0.03), mSecToSec(dT), state, robot_model));
 
     std::list<OpenSoT::tasks::Aggregated::TaskPtr> taskList;
-    taskPostural->getConstraints().push_back(constraintConvexHull);
-    taskPostural->getConstraints().push_back(constraintCoMVelocity);
     taskList.push_back(taskPostural);
     _task0 = OpenSoT::tasks::Aggregated::TaskPtr(new OpenSoT::tasks::Aggregated(taskList, state.size()));
-//    _task0->getConstraints().push_back(constraintConvexHull);
-//    _task0->getConstraints().push_back(constraintCoMVelocity);
+    _task0->getConstraints().push_back(constraintConvexHull);
+    _task0->getConstraints().push_back(constraintCoMVelocity);
 
     taskList.clear();
-    taskCartesianWaist->getConstraints().push_back(constraintConvexHull);
-    taskCartesianWaist->getConstraints().push_back(constraintCoMVelocity);
     taskList.push_back(taskCartesianWaist);
     taskList.push_back(taskCartesianTorso);
     _task1 = OpenSoT::tasks::Aggregated::TaskPtr(new OpenSoT::tasks::Aggregated(taskList, state.size()));
-//    _task1->getConstraints().push_back(constraintConvexHull);
-//    _task1->getConstraints().push_back(constraintCoMVelocity);
+    _task1->getConstraints().push_back(constraintConvexHull);
+    _task1->getConstraints().push_back(constraintCoMVelocity);
 
     taskList.clear();
-    taskCartesianRSole->getConstraints().push_back(constraintConvexHull);
-    taskCartesianRSole->getConstraints().push_back(constraintCoMVelocity);
     taskList.push_back(taskCartesianRSole);
     _task2 = OpenSoT::tasks::Aggregated::TaskPtr(new OpenSoT::tasks::Aggregated(taskList, state.size()));
-//    _task2->getConstraints().push_back(constraintConvexHull);
-//    _task2->getConstraints().push_back(constraintCoMVelocity);
+    _task2->getConstraints().push_back(constraintConvexHull);
+    _task2->getConstraints().push_back(constraintCoMVelocity);
 
     /** Bounds initialization **/
     boundsJointLimits = OpenSoT::constraints::velocity::JointLimits::ConstraintPtr(
@@ -92,20 +86,20 @@ void openSoTServer::create_problem(const yarp::sig::Vector& state, iDynUtils& ro
                             new OpenSoT::constraints::velocity::VelocityLimits(0.1, mSecToSec(dT), state.size()));
 
     /** Create sot **/
-    _stack_of_tasks.push_back(_task2);
-    _stack_of_tasks.push_back(_task1);
-    _stack_of_tasks.push_back(_task0);
+    _problem->stack_of_tasks.push_back(_task2);
+    _problem->stack_of_tasks.push_back(_task1);
+    _problem->stack_of_tasks.push_back(_task0);
 
     /** Create Aggregated Bounds **/
-    _bounds = boost::shared_ptr<OpenSoT::constraints::Aggregated>(
+    _problem->bounds = boost::shared_ptr<OpenSoT::constraints::Aggregated>(
                     new OpenSoT::constraints::Aggregated(boundsJointLimits, boundsJointVelocity, state.size()));
 
-    /** Solver Init **/
-    _qpOasesSolver = OpenSoT::solvers::QPOases_sot::SolverPtr(
-        new OpenSoT::solvers::QPOases_sot(_stack_of_tasks, _bounds, 2E2));
+    _problem->damped_least_square_eps = 2E2;
+
+    return _problem;
 }
 
-void openSoTServer::reset_tasks_and_constraints()
+void openSoTServer::reset_problem()
 {
     /** Task & Constraint reset **/
     taskPostural.reset();
@@ -117,12 +111,10 @@ void openSoTServer::reset_tasks_and_constraints()
     _task0.reset();
     _task1.reset();
     _task2.reset();
-    _stack_of_tasks.clear();
 
     /** Bounds reset **/
     boundsJointLimits.reset();
     boundsJointVelocity.reset();
-    _bounds.reset();
 
     /** Interface reset **/
     YPostural.reset();
@@ -131,26 +123,10 @@ void openSoTServer::reset_tasks_and_constraints()
     YWaistCartesian.reset();
 }
 
-void openSoTServer::reset_problem()
-{
-    reset_tasks_and_constraints();
-    reset_solver();
-}
-
-void openSoTServer::reset_solver()
-{
-    _qpOasesSolver.reset();
-}
-
 void openSoTServer::update(const Vector &state)
 {
     _task0->update(state);
     _task1->update(state);
     _task2->update(state);
-    _bounds->update(state);
-}
-
-bool openSoTServer::solve(Vector &solution)
-{
-    return _qpOasesSolver->solve(solution);
+    _problem->bounds->update(state);
 }

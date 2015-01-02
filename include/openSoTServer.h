@@ -12,13 +12,15 @@
 
 
 class openSoTServer {
-private:
-    /**
-     * @brief stack of OpenSoT tasks
-     * 
-     */
-    std::vector<boost::shared_ptr<OpenSoT::Task<yarp::sig::Matrix, yarp::sig::Vector>>> _stack_of_tasks;
-    
+public:
+    struct ik_problem
+    {
+        std::vector<boost::shared_ptr<OpenSoT::Task<yarp::sig::Matrix, yarp::sig::Vector>>> stack_of_tasks;
+        boost::shared_ptr<OpenSoT::constraints::Aggregated > bounds;
+        double damped_least_square_eps;
+    };
+
+private:    
     /**
      * @brief qpOases OpenSoT solver
      * 
@@ -39,16 +41,13 @@ private:
      * @brief task1 first stack
      */
     boost::shared_ptr<OpenSoT::Task<yarp::sig::Matrix, yarp::sig::Vector> > _task2;
-
-    /**
-     * @brief _bounds aggreated bounds
-     */
-    boost::shared_ptr<OpenSoT::constraints::Aggregated > _bounds;
     
     /**
      * @brief reset_tasks_and_constraints reset the current stack of tasks
      */
     void reset_tasks_and_constraints();
+
+    boost::shared_ptr<ik_problem> _problem;
 public:
     /**
      * @brief constructor
@@ -64,7 +63,7 @@ public:
      * @param state current state of the robot (eg. q, the joint position)
      * @param robot_model idynutils of a robot
      */
-    void create_problem(const yarp::sig::Vector& state,
+    boost::shared_ptr<ik_problem> create_problem(const yarp::sig::Vector& state,
                         iDynUtils& robot_model,const double dT,
                         const std::string& name_space);
     
