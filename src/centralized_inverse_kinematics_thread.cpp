@@ -34,9 +34,9 @@ bool centralized_inverse_kinematics_thread::custom_init()
     robot.sense(_q, _dq, _tau);
     robot.idynutils.updateiDyn3Model(_q, true);
 
-    open_sot_server = boost::shared_ptr<openSoTServer>(new openSoTServer());
+    open_sot_server = boost::shared_ptr<simple_problem>(new simple_problem());
 
-    boost::shared_ptr<openSoTServer::ik_problem> problem =
+    boost::shared_ptr<general_ik_problem::ik_problem> problem =
             open_sot_server->create_problem(_q, robot.idynutils, get_thread_period(), get_module_prefix());
 
     qp_solver = boost::shared_ptr<OpenSoT::solvers::QPOases_sot>(new OpenSoT::solvers::QPOases_sot(
@@ -81,7 +81,6 @@ bool centralized_inverse_kinematics_thread::custom_init()
 void centralized_inverse_kinematics_thread::custom_release()
 {
     ROS_INFO("Resetting Problem");
-    open_sot_server->reset_problem();
     open_sot_server.reset();
     ROS_INFO("Problem reset!");
     ROS_INFO("Resetting Solver");
@@ -104,7 +103,6 @@ void centralized_inverse_kinematics_thread::run()
         {
             _is_phantom = is_phantom;
             ROS_INFO("Resetting Problem");
-            open_sot_server->reset_problem();
             open_sot_server.reset();
             ROS_INFO("Problem reset!");
             ROS_INFO("Resetting Solver");
