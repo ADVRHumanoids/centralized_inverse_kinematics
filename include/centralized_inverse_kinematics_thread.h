@@ -34,8 +34,7 @@ private:
     yarp::os::BufferedPort<yarp::os::Bottle> _is_phantom_port;
     
 public:
-
-    openSoTServer open_sot_server;
+    boost::shared_ptr<openSoTServer> open_sot_server;
     boost::shared_ptr<OpenSoT::solvers::QPOases_sot> qp_solver;
     
     /**
@@ -61,9 +60,7 @@ public:
      * @brief centralized_inverse_kinematics control thread main loop
      * 
      */
-    virtual void run();
-
-    
+    virtual void run();    
 };
 
 #endif
