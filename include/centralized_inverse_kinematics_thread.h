@@ -34,7 +34,7 @@ private:
     yarp::os::BufferedPort<yarp::os::Bottle> _is_phantom_port;
     
 public:
-    boost::shared_ptr<simple_problem> open_sot_server;
+    boost::shared_ptr<simple_problem> ik_problem;
     boost::shared_ptr<OpenSoT::solvers::QPOases_sot> qp_solver;
     
     /**

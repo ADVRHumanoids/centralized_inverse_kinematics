@@ -13,7 +13,7 @@ centralized_inverse_kinematics_thread::centralized_inverse_kinematics_thread(   
     _dq( robot.idynutils.iDyn3_model.getNrOfDOFs(), 0.0 ),
     _tau( robot.idynutils.iDyn3_model.getNrOfDOFs(), 0.0 ),
     _dq_ref( robot.idynutils.iDyn3_model.getNrOfDOFs(), 0.0 ),
-    open_sot_server(),
+    ik_problem(),
     _is_phantom(true),
     _n()
     
@@ -34,10 +34,10 @@ bool centralized_inverse_kinematics_thread::custom_init()
     robot.sense(_q, _dq, _tau);
     robot.idynutils.updateiDyn3Model(_q, true);
 
-    open_sot_server = boost::shared_ptr<simple_problem>(new simple_problem());
+    ik_problem = boost::shared_ptr<simple_problem>(new simple_problem());
 
     boost::shared_ptr<general_ik_problem::ik_problem> problem =
-            open_sot_server->create_problem(_q, robot.idynutils, get_thread_period(), get_module_prefix());
+            ik_problem->create_problem(_q, robot.idynutils, get_thread_period(), get_module_prefix());
 
     qp_solver = boost::shared_ptr<OpenSoT::solvers::QPOases_sot>(new OpenSoT::solvers::QPOases_sot(
                                                                      problem->stack_of_tasks,
@@ -81,7 +81,7 @@ bool centralized_inverse_kinematics_thread::custom_init()
 void centralized_inverse_kinematics_thread::custom_release()
 {
     ROS_INFO("Resetting Problem");
-    open_sot_server.reset();
+    ik_problem.reset();
     ROS_INFO("Problem reset!");
     ROS_INFO("Resetting Solver");
     qp_solver.reset();
@@ -103,7 +103,7 @@ void centralized_inverse_kinematics_thread::run()
         {
             _is_phantom = is_phantom;
             ROS_INFO("Resetting Problem");
-            open_sot_server.reset();
+            ik_problem.reset();
             ROS_INFO("Problem reset!");
             ROS_INFO("Resetting Solver");
             qp_solver.reset();
@@ -124,7 +124,7 @@ void centralized_inverse_kinematics_thread::run()
         robot.idynutils.updateiDyn3Model(_q,true);
 
         /** Update OpenSoTServer **/
-        open_sot_server->update(_q);
+        ik_problem->update(_q);
 
         if(qp_solver->solve(_dq_ref))
         {
