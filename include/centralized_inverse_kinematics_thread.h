@@ -2,7 +2,7 @@
 #define centralized_inverse_kinematics_THREAD_H_
 
 #include <GYM/control_thread.hpp>
-#include <openSoTServer.h>
+#include <problems/simple_problem.h>
 #include <ros/ros.h>
 #include <yarp/os/all.h>
 
