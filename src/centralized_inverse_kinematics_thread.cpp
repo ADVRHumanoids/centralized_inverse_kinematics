@@ -24,13 +24,14 @@ centralized_inverse_kinematics_thread::centralized_inverse_kinematics_thread(   
 
     std::string topic_name = module_prefix + "/" + robot.idynutils.getRobotName() + "/joint_command";
     _joint_command_publisher = _n.advertise<sensor_msgs::JointState>(topic_name, 1);
-
-    std::string port_name = "/" + module_prefix + "/" + "is_phantom";
-    _is_phantom_port.open(port_name);
 }
 
 bool centralized_inverse_kinematics_thread::custom_init()
 {    
+    // param helper link param for all the chains and the max_vel param
+    std::shared_ptr<paramHelp::ParamHelperServer> ph = get_param_helper();
+    ph->linkParam( IS_PHANTOM_ID, &_is_phantom );
+
     robot.sense(_q, _dq, _tau);
     robot.idynutils.updateiDyn3Model(_q, true);
 
@@ -80,39 +81,22 @@ bool centralized_inverse_kinematics_thread::custom_init()
 
 void centralized_inverse_kinematics_thread::custom_release()
 {
-    ROS_INFO("Resetting Problem");
-    ik_problem.reset();
-    ROS_INFO("Problem reset!");
+    std::unique_lock<std::mutex>lck(_mtx);
+
     ROS_INFO("Resetting Solver");
     qp_solver.reset();
     ROS_INFO("Solver reset!");
-
-    int pending_reads = _is_phantom_port.getPendingReads();
-    yarp::os::Bottle* foo;
-    for(unsigned int i = 0; i < pending_reads; ++i)
-        foo = _is_phantom_port.read();
+    ROS_INFO("Resetting Problem");
+    ik_problem.reset();
+    ROS_INFO("Problem reset!");
+    _dq_ref = 0.0;
 }
 
 void centralized_inverse_kinematics_thread::run()
 {
-    yarp::os::Bottle* bot = _is_phantom_port.read(false);
-    if(!(bot == NULL)) //...che cagata
-    {
-        bool is_phantom = bot->get(0).asBool();
-        if(!(is_phantom == _is_phantom))
-        {
-            _is_phantom = is_phantom;
-            ROS_INFO("Resetting Problem");
-            ik_problem.reset();
-            ROS_INFO("Problem reset!");
-            ROS_INFO("Resetting Solver");
-            qp_solver.reset();
-            ROS_INFO("Solver reset!");
+    bool tmp_is_phantom = _is_phantom;
 
-            assert(custom_init());
-        }
-    }
-    else
+    if(ik_problem && qp_solver)
     {
         /** Sense **/
         //if is_click
@@ -130,7 +114,7 @@ void centralized_inverse_kinematics_thread::run()
         {
             yarp::sig::Vector q_ref = _q;
             q_ref += _dq_ref;
-            if(_is_phantom){
+            if(tmp_is_phantom){
                 ros::spinOnce();
 
                 sensor_msgs::JointState joint_msg;

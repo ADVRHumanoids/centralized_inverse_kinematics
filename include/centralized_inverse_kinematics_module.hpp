@@ -37,9 +37,39 @@ public:
      */
     virtual std::vector< paramHelp::ParamProxyInterface* > custom_get_ph_parameters() 
     {
-	// TODO: function skeleton
         std::vector<paramHelp::ParamProxyInterface *> custom_params;
+
+        // insert is_phantom
+        custom_params.push_back( new paramHelp::ParamProxyBasic<bool>(    "is_phantom",
+                                                                            IS_PHANTOM_ID,
+                                                                            IS_PHANTOM_SIZE,
+                                                                            paramHelp::PARAM_IN_OUT,
+                                                                            NULL,
+                                                                            "IK send data to phantom" ) );
+
         return custom_params;
+    }
+
+    virtual void custom_ph_param_value_changed_callback()
+    {
+        // get param helper
+        std::shared_ptr< paramHelp::ParamHelperServer > ph = get_param_helper();
+        // register all the callbacks
+        ph->registerParamValueChangedCallback( IS_PHANTOM_ID, this );
+    }
+
+    virtual void custom_parameterUpdated(const paramHelp::ParamProxyInterface *pd)
+    {
+        centralized_inverse_kinematics_thread* thread = get_thread();
+        if( pd->id == IS_PHANTOM_ID )
+        {
+            if( thread )
+            {
+                ROS_INFO("IS_PHANTOM WAS CHANGED!");
+                thread->stop();
+                thread->start();
+            }
+        }
     }
     
     

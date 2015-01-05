@@ -17,7 +17,7 @@ if __name__ == '__main__':
 
     port_posture = yarp.BufferedPortBottle()
     port_posture.open("/desired/posture/position/ref:o")
-    yarp.Network.connect("/desired/posture/position/ref:o", "/bigman/centralized_inverse_kinematics/postural/set_ref:i")
+    yarp.Network.connect("/desired/posture/position/ref:o", "/bigman/centralized_inverse_kinematics/Postural/set_ref:i")
 
     port_Waist = yarp.BufferedPortBottle()
     port_Waist.open("/bigman/centralized_inverse_kinematics/cartesian::Waist/set_ref:o")
@@ -41,7 +41,7 @@ if __name__ == '__main__':
             continue
 
     Waist_pos_d = kdl.Frame()
-    Waist_pos_d.p = kdl.Vector(world_pos_Waist[0], world_pos_Waist[1]+1, world_pos_Waist[2]-0.1)
+    Waist_pos_d.p = kdl.Vector(world_pos_Waist[0]+1, world_pos_Waist[1], world_pos_Waist[2]-0.1)
 
 
     bottle_Waist = port_Waist.prepare()
@@ -51,21 +51,17 @@ if __name__ == '__main__':
 
     left_arm_names = ["LShSag", "LShLat", "LShYaw", "LElbj", "LForearmPlate", "LWrj1", "LWrj2"]
     left_arm_values = [0.33,     0.18,     0.0,     -1.3,     0.0,             0.0,     0.0]
-#    left_arm_values = [0.33,     0.0,     0.0,     -1.3,     0.0,             0.0,     0.0]
 
     right_arm_names = ["RShSag", "RShLat", "RShYaw", "RElbj", "RForearmPlate", "RWrj1", "RWrj2"]
     right_arm_values = [0.33,    -0.18,    0.0,      -1.3,     0.0,             0.0,     0.0]
- #   right_arm_values = [0.33,    0.0,    0.0,      -1.3,     0.0,             0.0,     0.0]
 
-    #torso_names = ["WaistLat", "WaistSag", "WaistYaw"]
-    #torso_values = [0.0, 0.0, 0.0]
 
-    final_name_list = left_arm_names + right_arm_names #+ torso_name
-    final_value_list = left_arm_values + right_arm_values #+ torso_values
+    final_name_list = left_arm_names + right_arm_names 
+    final_value_list = left_arm_values + right_arm_values
 
     bottle_posture = port_posture.prepare()
     bottle_posture.clear()
     pYTask.position_joint_msg(final_name_list , final_value_list, bottle_posture)
-
-    #port_posture.write()
+    port_posture.write()
+    print("writing posture")
 

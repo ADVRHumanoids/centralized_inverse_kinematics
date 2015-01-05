@@ -5,6 +5,8 @@
 #include <problems/simple_problem.h>
 #include <ros/ros.h>
 #include <yarp/os/all.h>
+#include <mutex>
+
 
 /**
  * @brief centralized_inverse_kinematics control thread
@@ -24,14 +26,14 @@ private:
      */
     yarp::sig::Vector _dq_ref;
 
-    void custom_release();
+
 
     bool _is_phantom;
 
     ros::NodeHandle _n;
     ros::Publisher _joint_command_publisher;
 
-    yarp::os::BufferedPort<yarp::os::Bottle> _is_phantom_port;
+    std::mutex _mtx;
     
 public:
     boost::shared_ptr<simple_problem> ik_problem;
@@ -55,6 +57,8 @@ public:
      * @return true on succes, false otherwise
      */
     virtual bool custom_init();
+
+     void custom_release();
     
     /**
      * @brief centralized_inverse_kinematics control thread main loop
