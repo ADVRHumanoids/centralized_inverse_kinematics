@@ -17,10 +17,10 @@ boost::shared_ptr<simple_problem::ik_problem> simple_problem::create_problem(con
 {
     /** Create Constraints **/
         /** 1) Constraint Convex Hull **/
-        ConvexHull::Ptr constraintConvexHull(ConvexHull::Ptr(new ConvexHull(state, robot_model, 0.05)));
+        ConvexHull::Ptr constraintConvexHull(ConvexHull::Ptr(new ConvexHull(state, robot_model, 0.06)));
 
         /** 2) CoM Velocity **/
-        CoMVelocity::Ptr constraintCoMVel(CoMVelocity::Ptr(new CoMVelocity(Vector(3,0.03), mSecToSec(dT), state, robot_model)));
+        CoMVelocity::Ptr constraintCoMVel(CoMVelocity::Ptr(new CoMVelocity(Vector(3,0.01), mSecToSec(dT), state, robot_model)));
 
     /** Create tasks **/
         /** 1) Cartesian RSole **/
@@ -61,7 +61,7 @@ boost::shared_ptr<simple_problem::ik_problem> simple_problem::create_problem(con
                                                                             robot_model.iDyn3_model.getJointBoundMax(),
                                                                             robot_model.iDyn3_model.getJointBoundMin())));
         /** 2) bounds joint velocities **/
-        VelocityLimits::ConstraintPtr boundsJointVelLimits(VelocityLimits::ConstraintPtr(new VelocityLimits(0.1, mSecToSec(dT), state.size())));
+        VelocityLimits::ConstraintPtr boundsJointVelLimits(VelocityLimits::ConstraintPtr(new VelocityLimits(0.05, mSecToSec(dT), state.size())));
 
 
     /** Create Augmented (aggregated) tasks  and stack of tasks**/
