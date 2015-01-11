@@ -40,10 +40,15 @@ bool centralized_inverse_kinematics_thread::custom_init()
     boost::shared_ptr<general_ik_problem::ik_problem> problem =
             ik_problem->create_problem(_q, robot.idynutils, get_thread_period(), get_module_prefix());
 
-    qp_solver = boost::shared_ptr<OpenSoT::solvers::QPOases_sot>(new OpenSoT::solvers::QPOases_sot(
+    try{ qp_solver = boost::shared_ptr<OpenSoT::solvers::QPOases_sot>(new OpenSoT::solvers::QPOases_sot(
                                                                      problem->stack_of_tasks,
                                                                      problem->bounds,
-                                                                     problem->damped_least_square_eps));
+                                                                     problem->damped_least_square_eps));}
+    catch (const char* s){
+        ROS_ERROR(s);
+        ROS_ERROR("The Module will be stopped.");
+        custom_release();
+        return false;}
 
     if(qp_solver->solve(_dq_ref))
     {
