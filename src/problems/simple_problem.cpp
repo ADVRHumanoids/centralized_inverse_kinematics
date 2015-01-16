@@ -44,6 +44,10 @@ boost::shared_ptr<simple_problem::ik_problem> simple_problem::create_problem(con
 
         /** 4) Postural **/
         Postural::Ptr taskPostural(Postural::Ptr(new Postural(state)));
+        taskPostural->setLambda(0.0);
+
+        /** 5) Mininimize Acceleration **/
+        //MinimizeAcceleration::Ptr taskMinimizeAcceleration(MinimizeAcceleration::Ptr(new MinimizeAcceleration(state)));
 
     /** Associate interfaces to tasks **/
         YRSoleCartesian = boost::shared_ptr<OpenSoT::interfaces::yarp::tasks::YCartesian>(
@@ -61,7 +65,7 @@ boost::shared_ptr<simple_problem::ik_problem> simple_problem::create_problem(con
                                                                             robot_model.iDyn3_model.getJointBoundMax(),
                                                                             robot_model.iDyn3_model.getJointBoundMin())));
         /** 2) bounds joint velocities **/
-        VelocityLimits::ConstraintPtr boundsJointVelLimits(VelocityLimits::ConstraintPtr(new VelocityLimits(0.05, mSecToSec(dT), state.size())));
+        VelocityLimits::ConstraintPtr boundsJointVelLimits(VelocityLimits::ConstraintPtr(new VelocityLimits(0.1, mSecToSec(dT), state.size())));
 
 
     /** Create Augmented (aggregated) tasks  and stack of tasks**/
@@ -82,17 +86,22 @@ boost::shared_ptr<simple_problem::ik_problem> simple_problem::create_problem(con
             problem->stack_of_tasks[1]->getConstraints().push_back(constraintConvexHull);
             problem->stack_of_tasks[1]->getConstraints().push_back(constraintCoMVel);
 
-        /** Third stack **/
+
+
+        /** 3) Third stack **/
         taskList.clear();
         taskList.push_back(taskPostural);
+        //taskList.push_back(taskMinimizeAcceleration);
         problem->stack_of_tasks.push_back(OpenSoT::tasks::Aggregated::TaskPtr(new OpenSoT::tasks::Aggregated(taskList, state.size())));
-            /** 2.1) Add constraints to the stack **/
+            /** 3.1) Add constraints to the stack **/
             problem->stack_of_tasks[2]->getConstraints().push_back(constraintConvexHull);
             problem->stack_of_tasks[2]->getConstraints().push_back(constraintCoMVel);
 
     /** Add bounds to problem **/
-    problem->bounds = boost::shared_ptr<OpenSoT::constraints::Aggregated>(new OpenSoT::constraints::Aggregated(
-                                                                              boundJointLimits, boundsJointVelLimits, state.size()));
+        std::list<OpenSoT::constraints::Aggregated::ConstraintPtr> bounds;
+        bounds.push_back(boundJointLimits);
+        bounds.push_back(boundsJointVelLimits);
+        problem->bounds = boost::shared_ptr<OpenSoT::constraints::Aggregated>(new OpenSoT::constraints::Aggregated(bounds, state.size()));
 
     /** Set damped leas squares fator **/
     problem->damped_least_square_eps = 2E2;
