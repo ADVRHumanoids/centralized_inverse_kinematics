@@ -67,6 +67,7 @@ ADD_DEFINITIONS(${PCL_DEFINITIONS})
 ADD_EXECUTABLE(${PROJECT_NAME} src/centralized_inverse_kinematics_main.cpp 
 			          src/centralized_inverse_kinematics_thread.cpp
                                src/problems/simple_problem.cpp
+src/problems/interaction_problem.cpp
 			          )
 
 TARGET_LINK_LIBRARIES(${PROJECT_NAME} ${iDynTree_LIBRARIES}
