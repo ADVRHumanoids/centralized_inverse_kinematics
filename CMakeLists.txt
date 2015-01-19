@@ -48,6 +48,7 @@ FIND_PACKAGE(iDynTree REQUIRED)
 FIND_PACKAGE(PCL 1.2 REQUIRED)
 FIND_PACKAGE(OpenSoT REQUIRED)
 FIND_PACKAGE(roscpp REQUIRED)
+FIND_PACKAGE(moveit_core REQUIRED)
 FIND_PACKAGE(sensor_msgs REQUIRED)
 
 # add include directories
@@ -60,6 +61,7 @@ INCLUDE_DIRECTORIES(include
                     ${OpenSoT_INCLUDE_DIRS}
                     ${roscpp_INCLUDE_DIRS}
                     ${sensor_msgs_INCLUDE_DIRS}
+                    ${moveit_core_INCLUDE_DIRS}
 		    )
 
 ADD_DEFINITIONS(${PCL_DEFINITIONS})
@@ -78,6 +80,7 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME} ${iDynTree_LIBRARIES}
                                       ${OpenSoT_LIBRARIES}
                                       ${roscpp_LIBRARIES}
                                       ${sensor_msgs_LIBRARIES}
+                                      ${moveit_core_LIBRARIES}
 				      )
 
 add_subdirectory(app)

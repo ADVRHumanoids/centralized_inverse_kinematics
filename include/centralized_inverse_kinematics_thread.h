@@ -3,6 +3,7 @@
 
 #include <GYM/control_thread.hpp>
 #include <problems/simple_problem.h>
+#include <problems/interaction_problem.h>
 #include <ros/ros.h>
 #include <yarp/os/all.h>
 #include <mutex>
@@ -36,7 +37,9 @@ private:
     std::mutex _mtx;
     
 public:
-    boost::shared_ptr<simple_problem> ik_problem;
+    //boost::shared_ptr<simple_problem> ik_problem;
+    boost::shared_ptr<interaction_problem> ik_problem;
+
     boost::shared_ptr<OpenSoT::solvers::QPOases_sot> qp_solver;
     
     /**

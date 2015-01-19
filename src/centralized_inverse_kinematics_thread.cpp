@@ -35,7 +35,20 @@ bool centralized_inverse_kinematics_thread::custom_init()
     robot.sense(_q, _dq, _tau);
     robot.idynutils.updateiDyn3Model(_q, true);
 
-    ik_problem = boost::shared_ptr<simple_problem>(new simple_problem());
+    RobotUtils::ftReadings ft_readings = robot.senseftSensors();
+    RobotUtils::ftPtrMap ft_sensors = robot.getftSensors();
+    for(RobotUtils::ftReadings::iterator it = ft_readings.begin(); it != ft_readings.end(); it++)
+    {
+        moveit::core::LinkModel* ft_link = robot.idynutils.moveit_robot_model->getLinkModel(
+                    ft_sensors[it->first]->getReferenceFrame());
+        std::string ft_joint_name = ft_link->getParentJointModel()->getName();
+        int ft_index = robot.idynutils.iDyn3_model.getFTSensorIndex(ft_joint_name);
+
+        robot.idynutils.iDyn3_model.setSensorMeasurement(ft_index, -1.0*it->second);
+    }
+
+    //ik_problem = boost::shared_ptr<simple_problem>(new simple_problem());
+    ik_problem = boost::shared_ptr<interaction_problem>(new interaction_problem());
 
     boost::shared_ptr<general_ik_problem::ik_problem> problem =
             ik_problem->create_problem(_q, robot.idynutils, get_thread_period(), get_module_prefix());
@@ -104,6 +117,8 @@ void centralized_inverse_kinematics_thread::run()
     if(ik_problem && qp_solver)
     {
         /** Sense **/
+        RobotUtils::ftReadings ft_readings = robot.senseftSensors();
+        RobotUtils::ftPtrMap ft_sensors = robot.getftSensors();
         //if is_click
         //  robot.sense(_q)
         //else
@@ -111,6 +126,16 @@ void centralized_inverse_kinematics_thread::run()
 
         /** Update Models **/
         robot.idynutils.updateiDyn3Model(_q,true);
+
+        for(RobotUtils::ftReadings::iterator it = ft_readings.begin(); it != ft_readings.end(); it++)
+        {
+            moveit::core::LinkModel* ft_link = robot.idynutils.moveit_robot_model->getLinkModel(
+                        ft_sensors[it->first]->getReferenceFrame());
+            std::string ft_joint_name = ft_link->getParentJointModel()->getName();
+            int ft_index = robot.idynutils.iDyn3_model.getFTSensorIndex(ft_joint_name);
+
+            robot.idynutils.iDyn3_model.setSensorMeasurement(ft_index, -1.0*it->second);
+        }
 
         /** Update OpenSoTServer **/
         ik_problem->update(_q);
