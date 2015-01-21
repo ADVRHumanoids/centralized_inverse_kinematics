@@ -1,6 +1,7 @@
 #include <problems/interaction_problem.h>
 #include <boost/shared_ptr.hpp>
 #include <OpenSoT/tasks/velocity/Interaction.h>
+#include <OpenSoT/SubTask.h>
 
 #define mSecToSec(X) (X*0.001)
 
@@ -11,7 +12,19 @@ using namespace yarp::sig;
 interaction_problem::interaction_problem():
     general_ik_problem()
 {
+    file.open("wrench.m");
+    file<<"W = ["<<std::endl;
+}
 
+void interaction_problem::recordWrench()
+{
+    if(file.is_open())
+        file<<taskRWrist->getActualWrench().toString()<<std::endl;
+}
+
+interaction_problem::~interaction_problem()
+{
+    file.close();
 }
 
 boost::shared_ptr<interaction_problem::ik_problem> interaction_problem::create_problem(const Vector& state,
@@ -20,11 +33,10 @@ boost::shared_ptr<interaction_problem::ik_problem> interaction_problem::create_p
 {
     /** Create tasks **/
         /** 1) Force r_wrist **/
-        Interaction::Ptr taskRWrist(Interaction::Ptr(new Interaction("interaction::r_wrist",state,robot_model,
-                                                          "r_wrist", "world", "r_arm_ft")));
+        taskRWrist = Interaction::Ptr(new Interaction("interaction::r_wrist",state,robot_model,
+                                                      "r_wrist", "world", "r_arm_ft"));
         yarp::sig::Matrix C(6,6); C = C.eye();
-        C.submatrix(0,2,0,2) = 1E-8 * C.submatrix(0,2,0,2);
-        C.submatrix(3,5,3,5) = 1E-8 * C.submatrix(3,5,3,5);
+        C = 1E-5 * C;
         taskRWrist->setCompliance(C);
             /** 1.1) We want to control r_wrist in /world frame using only the joints in the arms **/
             std::vector<bool> active_joint_mask = taskRWrist->getActiveJointsMask();
@@ -32,8 +44,12 @@ boost::shared_ptr<interaction_problem::ik_problem> interaction_problem::create_p
                 active_joint_mask[robot_model.left_leg.joint_numbers[i]] = false;
             taskRWrist->setActiveJointsMask(active_joint_mask);
 
-        yarp::sig::Vector desired_wrench(6, 0.0); desired_wrench[0] = 25.0; desired_wrench[1] = 10.0; desired_wrench[2] = 10.0;
-        taskRWrist->setReferenceWrench(desired_wrench);
+
+        //OpenSoT::SubTask::Ptr taskRWristPosition(new OpenSoT::SubTask(taskRWrist, OpenSoT::SubTask::SubTaskMap::range(0,2)));
+
+        yarp::sig::Matrix W = taskRWrist->getWeight();
+        W(3,3) = 0.0; W(4,4) = 0.0; W(5,5) = 0.0;
+        taskRWrist->setWeight(W);
 
         /** 2) Postural **/
         Postural::Ptr taskPostural(Postural::Ptr(new Postural(state)));
