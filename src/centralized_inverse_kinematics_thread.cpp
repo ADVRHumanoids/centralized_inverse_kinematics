@@ -61,7 +61,7 @@ bool centralized_inverse_kinematics_thread::custom_init()
 //    desired_wrench[0] = 25.0; desired_wrench[1] = 5.0; desired_wrench[2] = 5.0;
 //    ik_problem->taskRWrist->setReferenceWrench(desired_wrench);
 
-    try{ qp_solver = boost::shared_ptr<OpenSoT::solvers::QPOases_sot>(new OpenSoT::solvers::QPOases_sot(
+    try{ qp_solver = OpenSoT::solvers::QPOases_sot::Ptr(new OpenSoT::solvers::QPOases_sot(
                                                                      problem->stack_of_tasks,
                                                                      problem->bounds,
                                                                      problem->damped_least_square_eps));}

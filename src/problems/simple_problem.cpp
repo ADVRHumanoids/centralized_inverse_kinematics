@@ -54,13 +54,13 @@ boost::shared_ptr<simple_problem::ik_problem> simple_problem::create_problem(con
         MinimizeAcceleration::Ptr taskMinimizeAcceleration(MinimizeAcceleration::Ptr(new MinimizeAcceleration(state)));
 
     /** Associate interfaces to tasks **/
-        YRSoleCartesian = boost::shared_ptr<OpenSoT::interfaces::yarp::tasks::YCartesian>(
+        YRSoleCartesian = OpenSoT::interfaces::yarp::tasks::YCartesian::Ptr(
                         new OpenSoT::interfaces::yarp::tasks::YCartesian(robot_model.getRobotName(), name_space, taskRSole));
-        YWaistCartesian = boost::shared_ptr<OpenSoT::interfaces::yarp::tasks::YCartesian>(
+        YWaistCartesian = OpenSoT::interfaces::yarp::tasks::YCartesian::Ptr(
                         new OpenSoT::interfaces::yarp::tasks::YCartesian(robot_model.getRobotName(), name_space, taskWaist));
-        YTorsoCartesian = boost::shared_ptr<OpenSoT::interfaces::yarp::tasks::YCartesian>(
+        YTorsoCartesian = OpenSoT::interfaces::yarp::tasks::YCartesian::Ptr(
                         new OpenSoT::interfaces::yarp::tasks::YCartesian(robot_model.getRobotName(), name_space, taskTorso));
-        YPostural = boost::shared_ptr<OpenSoT::interfaces::yarp::tasks::YPostural>(
+        YPostural = OpenSoT::interfaces::yarp::tasks::YPostural::Ptr(
                         new OpenSoT::interfaces::yarp::tasks::YPostural(robot_model.getRobotName(), name_space, robot_model,
                                                                         taskPostural));
     /** Create bounds **/
@@ -105,7 +105,7 @@ boost::shared_ptr<simple_problem::ik_problem> simple_problem::create_problem(con
         std::list<OpenSoT::constraints::Aggregated::ConstraintPtr> bounds;
         bounds.push_back(boundJointLimits);
         bounds.push_back(boundsJointVelLimits);
-        problem->bounds = boost::shared_ptr<OpenSoT::constraints::Aggregated>(new OpenSoT::constraints::Aggregated(bounds, state.size()));
+        problem->bounds = OpenSoT::constraints::Aggregated::Ptr(new OpenSoT::constraints::Aggregated(bounds, state.size()));
 
     /** Set damped leas squares fator **/
     problem->damped_least_square_eps = 2E2;

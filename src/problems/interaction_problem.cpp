@@ -78,7 +78,7 @@ boost::shared_ptr<interaction_problem::ik_problem> interaction_problem::create_p
         std::list<OpenSoT::constraints::Aggregated::ConstraintPtr> bounds;
         bounds.push_back(boundJointLimits);
         bounds.push_back(boundsJointVelLimits);
-        problem->bounds = boost::shared_ptr<OpenSoT::constraints::Aggregated>(new OpenSoT::constraints::Aggregated(bounds, state.size()));
+        problem->bounds = OpenSoT::constraints::Aggregated::Ptr(new OpenSoT::constraints::Aggregated(bounds, state.size()));
 
     /** Set damped leas squares fator **/
     problem->damped_least_square_eps = 2E2;
