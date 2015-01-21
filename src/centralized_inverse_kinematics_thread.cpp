@@ -50,16 +50,16 @@ bool centralized_inverse_kinematics_thread::custom_init()
         robot.idynutils.iDyn3_model.setSensorMeasurement(ft_index, -1.0*it->second);
     }
 
-    //ik_problem = boost::shared_ptr<simple_problem>(new simple_problem());
-    ik_problem = boost::shared_ptr<interaction_problem>(new interaction_problem());
+    ik_problem = boost::shared_ptr<simple_problem>(new simple_problem());
+    //ik_problem = boost::shared_ptr<interaction_problem>(new interaction_problem());
 
     boost::shared_ptr<general_ik_problem::ik_problem> problem =
             ik_problem->create_problem(_q, robot.idynutils, get_thread_period(), get_module_prefix());
 
-    yarp::sig::Vector desired_wrench(6, 0.0);
-    desired_wrench = ik_problem->taskRWrist->getReferenceWrench();
-    desired_wrench[0] = 25.0; desired_wrench[1] = 5.0; desired_wrench[2] = 5.0;
-    ik_problem->taskRWrist->setReferenceWrench(desired_wrench);
+//    yarp::sig::Vector desired_wrench(6, 0.0);
+//    desired_wrench = ik_problem->taskRWrist->getReferenceWrench();
+//    desired_wrench[0] = 25.0; desired_wrench[1] = 5.0; desired_wrench[2] = 5.0;
+//    ik_problem->taskRWrist->setReferenceWrench(desired_wrench);
 
     try{ qp_solver = boost::shared_ptr<OpenSoT::solvers::QPOases_sot>(new OpenSoT::solvers::QPOases_sot(
                                                                      problem->stack_of_tasks,
@@ -150,7 +150,7 @@ void centralized_inverse_kinematics_thread::run()
 
 //        std::cout<<"Actual Wrench in "<<ik_problem->taskRWrist->getBaseLink();
 //        std::cout<<" ["<<ik_problem->taskRWrist->getActualWrench().toString()<<"]"<<std::endl;
-        ik_problem->recordWrench();
+//        ik_problem->recordWrench();
 
         if(qp_solver->solve(_dq_ref))
         {

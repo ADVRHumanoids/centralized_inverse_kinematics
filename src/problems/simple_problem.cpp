@@ -1,5 +1,6 @@
 #include <problems/simple_problem.h>
 #include <boost/shared_ptr.hpp>
+#include <OpenSoT/SubTask.h>
 
 #define mSecToSec(X) (X*0.001)
 
@@ -37,17 +38,20 @@ boost::shared_ptr<simple_problem::ik_problem> simple_problem::create_problem(con
             for(unsigned int i = 0; i < robot_model.left_leg.getNrOfDOFs(); ++i)
                 active_joint_mask[robot_model.left_leg.joint_numbers[i]] = false;
             taskTorso->setActiveJointsMask(active_joint_mask);
+
             /** 3.2) We are interested only in the orientation of the torso **/
             yarp::sig::Matrix W_torso(6,6); W_torso = W_torso.eye();
             W_torso(0,0) = 0.0; W_torso(1,1) = 0.0; W_torso(2,2) = 0.0;
             taskTorso->setWeight(W_torso);
+//            OpenSoT::SubTask::Ptr taskTorsoPosition(OpenSoT::SubTask::Ptr(
+//                                            new OpenSoT::SubTask(taskTorso, OpenSoT::SubTask::SubTaskMap::range(3,5))));
 
         /** 4) Postural **/
         Postural::Ptr taskPostural(Postural::Ptr(new Postural(state)));
-        taskPostural->setLambda(0.0);
+        //taskPostural->setLambda(0.0);
 
         /** 5) Mininimize Acceleration **/
-        //MinimizeAcceleration::Ptr taskMinimizeAcceleration(MinimizeAcceleration::Ptr(new MinimizeAcceleration(state)));
+        MinimizeAcceleration::Ptr taskMinimizeAcceleration(MinimizeAcceleration::Ptr(new MinimizeAcceleration(state)));
 
     /** Associate interfaces to tasks **/
         YRSoleCartesian = boost::shared_ptr<OpenSoT::interfaces::yarp::tasks::YCartesian>(
@@ -90,8 +94,8 @@ boost::shared_ptr<simple_problem::ik_problem> simple_problem::create_problem(con
 
         /** 3) Third stack **/
         taskList.clear();
-        taskList.push_back(taskPostural);
-        //taskList.push_back(taskMinimizeAcceleration);
+        //taskList.push_back(taskPostural);
+        taskList.push_back(taskMinimizeAcceleration);
         problem->stack_of_tasks.push_back(OpenSoT::tasks::Aggregated::TaskPtr(new OpenSoT::tasks::Aggregated(taskList, state.size())));
             /** 3.1) Add constraints to the stack **/
             problem->stack_of_tasks[2]->getConstraints().push_back(constraintConvexHull);
