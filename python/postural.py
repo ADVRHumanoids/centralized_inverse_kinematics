@@ -42,7 +42,7 @@ if __name__ == '__main__':
 
     Waist_pos_d = kdl.Frame()
     #Waist_pos_d.p = kdl.Vector(world_pos_Waist[0]+1, world_pos_Waist[1], world_pos_Waist[2]-0.1)
-    Waist_pos_d.p = kdl.Vector(world_pos_Waist[0]-1, world_pos_Waist[1], world_pos_Waist[2]+0.1)
+    Waist_pos_d.p = kdl.Vector(world_pos_Waist[0], world_pos_Waist[1], world_pos_Waist[2]-1)
 
 
     bottle_Waist = port_Waist.prepare()
