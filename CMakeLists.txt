@@ -45,7 +45,7 @@ FIND_PACKAGE(GYM REQUIRED)
 FIND_PACKAGE(paramHelp REQUIRED)
 FIND_PACKAGE(kdl_codyco REQUIRED)
 FIND_PACKAGE(iDynTree REQUIRED)
-FIND_PACKAGE(PCL 1.2 REQUIRED)
+FIND_PACKAGE(PCL 1.7 REQUIRED)
 FIND_PACKAGE(OpenSoT REQUIRED)
 FIND_PACKAGE(roscpp REQUIRED)
 FIND_PACKAGE(moveit_core REQUIRED)
@@ -76,7 +76,6 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME} ${iDynTree_LIBRARIES}
                                       ${YARP_LIBRARIES}
 				      ${idynutils_LIBRARIES}
 				      ${GYM_LIBRARIES}
-                                      ${PCL_LIBRARIES}
                                       ${OpenSoT_LIBRARIES}
                                       ${roscpp_LIBRARIES}
                                       ${sensor_msgs_LIBRARIES}
