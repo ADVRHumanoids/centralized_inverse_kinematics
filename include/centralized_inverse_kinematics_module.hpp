@@ -46,6 +46,12 @@ public:
                                                                             paramHelp::PARAM_IN_OUT,
                                                                             NULL,
                                                                             "IK send data to phantom" ) );
+        custom_params.push_back( new paramHelp::ParamProxyBasic<bool>(    "is_clik",
+                                                                            IS_CLIK_ID,
+                                                                            IS_CLIK_SIZE,
+                                                                            paramHelp::PARAM_IN_OUT,
+                                                                            NULL,
+                                                                            "Enable Closed Loop Inverse Kinematics" ) );
 
         return custom_params;
     }
@@ -56,6 +62,7 @@ public:
         std::shared_ptr< paramHelp::ParamHelperServer > ph = get_param_helper();
         // register all the callbacks
         ph->registerParamValueChangedCallback( IS_PHANTOM_ID, this );
+        ph->registerParamValueChangedCallback( IS_CLIK_ID, this );
     }
 
     virtual void custom_parameterUpdated(const paramHelp::ParamProxyInterface *pd)
@@ -68,6 +75,13 @@ public:
                 ROS_INFO("IS_PHANTOM WAS CHANGED!");
                 thread->stop();
                 thread->start();
+            }
+        }
+        if(pd->id == IS_CLIK_ID)
+        {
+            if( thread )
+            {
+                ROS_INFO("IS_CLIK WAS CHANGED!");
             }
         }
     }

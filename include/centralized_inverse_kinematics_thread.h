@@ -4,6 +4,7 @@
 #include <GYM/control_thread.hpp>
 #include <problems/simple_problem.h>
 #include <problems/interaction_problem.h>
+#include <problems/wb_manip_problem.h>
 #include <ros/ros.h>
 #include <yarp/os/all.h>
 #include <mutex>
@@ -30,6 +31,7 @@ private:
 
 
     bool _is_phantom;
+    bool _is_clik;
 
     ros::NodeHandle _n;
     ros::Publisher _joint_command_publisher;
@@ -37,8 +39,9 @@ private:
     std::mutex _mtx;
     
 public:
-    boost::shared_ptr<simple_problem> ik_problem;
+    //boost::shared_ptr<simple_problem> ik_problem;
     //boost::shared_ptr<interaction_problem> ik_problem;
+    boost::shared_ptr<wb_manip_problem> ik_problem;
 
     boost::shared_ptr<OpenSoT::solvers::QPOases_sot> qp_solver;
     

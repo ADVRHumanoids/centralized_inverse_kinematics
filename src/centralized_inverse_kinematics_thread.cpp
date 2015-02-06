@@ -18,6 +18,7 @@ centralized_inverse_kinematics_thread::centralized_inverse_kinematics_thread(   
     _dq_ref( robot.idynutils.iDyn3_model.getNrOfDOFs(), 0.0 ),
     ik_problem(),
     _is_phantom(true),
+    _is_clik(false),
     _n()
     
 {
@@ -34,6 +35,7 @@ bool centralized_inverse_kinematics_thread::custom_init()
     // param helper link param for all the chains and the max_vel param
     std::shared_ptr<paramHelp::ParamHelperServer> ph = get_param_helper();
     ph->linkParam( IS_PHANTOM_ID, &_is_phantom );
+    ph->linkParam( IS_CLIK_ID, &_is_clik );
 
     robot.sense(_q, _dq, _tau);
     robot.idynutils.updateiDyn3Model(_q, true);
@@ -50,8 +52,9 @@ bool centralized_inverse_kinematics_thread::custom_init()
         robot.idynutils.iDyn3_model.setSensorMeasurement(ft_index, -1.0*it->second);
     }
 
-    ik_problem = boost::shared_ptr<simple_problem>(new simple_problem());
+    //ik_problem = boost::shared_ptr<simple_problem>(new simple_problem());
     //ik_problem = boost::shared_ptr<interaction_problem>(new interaction_problem());
+    ik_problem = boost::shared_ptr<wb_manip_problem>(new wb_manip_problem());
 
     boost::shared_ptr<general_ik_problem::ik_problem> problem =
             ik_problem->create_problem(_q, robot.idynutils, get_thread_period(), get_module_prefix());
@@ -127,10 +130,10 @@ void centralized_inverse_kinematics_thread::run()
         /** Sense **/
         RobotUtils::ftReadings ft_readings = robot.senseftSensors();
         RobotUtils::ftPtrMap ft_sensors = robot.getftSensors();
-        //if is_click
-        //  robot.sense(_q)
-        //else
-        _q += _dq_ref;
+        if(_is_clik)
+            robot.sense(_q, _dq, _tau);
+        else
+            _q += _dq_ref;
 
         /** Update Models **/
         robot.idynutils.updateiDyn3Model(_q,true);
