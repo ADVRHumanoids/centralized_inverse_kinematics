@@ -28,6 +28,17 @@ boost::shared_ptr<the_dying_swan_problem::ik_problem> the_dying_swan_problem::cr
         taskCoM = CoM::Ptr(new CoM(state, robot_model));
         taskCoM_interface = YCoM::Ptr(new YCoM(robot_model.getRobotName(), name_space, taskCoM));
 
+        taskTorsoHead = Cartesian::Ptr(new Cartesian("cartesian::TorsoHead", state, robot_model, "gaze", "world"));
+        taskTorsoHead_interface = YCartesian::Ptr(new YCartesian(robot_model.getRobotName(), name_space, taskTorsoHead));
+        std::vector<bool> active_joint_mask = taskTorsoHead->getActiveJointsMask();
+        for(unsigned int i = 0; i < robot_model.left_leg.getNrOfDOFs(); ++i)
+            active_joint_mask[robot_model.left_leg.joint_numbers[i]] = false;
+        taskTorsoHead->setActiveJointsMask(active_joint_mask);
+        OpenSoT::SubTask::Ptr subTaskTorsoHead_x(
+                    new OpenSoT::SubTask(taskTorsoHead, OpenSoT::SubTask::SubTaskMap::range(3,3)));
+        OpenSoT::SubTask::Ptr subTaskTorsoHead_z(
+                    new OpenSoT::SubTask(taskTorsoHead, OpenSoT::SubTask::SubTaskMap::range(5,5)));
+
         /** 2) Postural **/
         Postural::Ptr taskPostural(Postural::Ptr(new Postural(state)));
 
@@ -50,6 +61,8 @@ boost::shared_ptr<the_dying_swan_problem::ik_problem> the_dying_swan_problem::cr
         taskList.clear();
         taskList.push_back(taskCoM);
         taskList.push_back(taskRWrist);
+        taskList.push_back(subTaskTorsoHead_x);
+        taskList.push_back(subTaskTorsoHead_z);
         problem->stack_of_tasks.push_back(OpenSoT::tasks::Aggregated::TaskPtr(new OpenSoT::tasks::Aggregated(taskList, state.size())));
 
         /** 3) Third stack **/

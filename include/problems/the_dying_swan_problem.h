@@ -22,6 +22,9 @@ public:
     OpenSoT::tasks::velocity::CoM::Ptr taskCoM;
     OpenSoT::interfaces::yarp::tasks::YCoM::Ptr taskCoM_interface;
 
+    OpenSoT::tasks::velocity::Cartesian::Ptr taskTorsoHead;
+    OpenSoT::interfaces::yarp::tasks::YCartesian::Ptr taskTorsoHead_interface;
+
 
     ~the_dying_swan_problem(){}
 };
