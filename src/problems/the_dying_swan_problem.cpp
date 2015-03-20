@@ -40,11 +40,15 @@ boost::shared_ptr<the_dying_swan_problem::ik_problem> the_dying_swan_problem::cr
     /** Create Augmented (aggregated) tasks  and stack of tasks**/
         /** 1) Higher priority Stack **/
         std::list<OpenSoT::tasks::Aggregated::TaskPtr> taskList;
-        taskList.push_back(taskRWrist);
         taskList.push_back(taskRSole);
         problem->stack_of_tasks.push_back(OpenSoT::tasks::Aggregated::TaskPtr(new OpenSoT::tasks::Aggregated(taskList, state.size())));
 
-        /** 2) Second stack **/
+        /** 2) Second priority Stack **/
+        taskList.clear();
+        taskList.push_back(taskRWrist);
+        problem->stack_of_tasks.push_back(OpenSoT::tasks::Aggregated::TaskPtr(new OpenSoT::tasks::Aggregated(taskList, state.size())));
+
+        /** 3) Third stack **/
         taskList.clear();
         taskList.push_back(taskPostural);
         problem->stack_of_tasks.push_back(OpenSoT::tasks::Aggregated::TaskPtr(new OpenSoT::tasks::Aggregated(taskList, state.size())));

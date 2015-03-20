@@ -54,7 +54,8 @@ bool centralized_inverse_kinematics_thread::custom_init()
 
     //ik_problem = boost::shared_ptr<simple_problem>(new simple_problem());
     //ik_problem = boost::shared_ptr<interaction_problem>(new interaction_problem());
-    ik_problem = boost::shared_ptr<wb_manip_problem>(new wb_manip_problem());
+    //ik_problem = boost::shared_ptr<wb_manip_problem>(new wb_manip_problem());
+    ik_problem = boost::shared_ptr<the_dying_swan_problem>(new the_dying_swan_problem());
 
     boost::shared_ptr<general_ik_problem::ik_problem> problem =
             ik_problem->create_problem(_q, robot.idynutils, get_thread_period(), get_module_prefix());

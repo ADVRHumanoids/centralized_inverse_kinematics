@@ -5,6 +5,7 @@
 #include <problems/simple_problem.h>
 #include <problems/interaction_problem.h>
 #include <problems/wb_manip_problem.h>
+#include <problems/the_dying_swan_problem.h>
 #include <ros/ros.h>
 #include <yarp/os/all.h>
 #include <mutex>
@@ -41,7 +42,8 @@ private:
 public:
     //boost::shared_ptr<simple_problem> ik_problem;
     //boost::shared_ptr<interaction_problem> ik_problem;
-    boost::shared_ptr<wb_manip_problem> ik_problem;
+    //boost::shared_ptr<wb_manip_problem> ik_problem;
+    boost::shared_ptr<the_dying_swan_problem> ik_problem;
 
     boost::shared_ptr<OpenSoT::solvers::QPOases_sot> qp_solver;
     

@@ -20,7 +20,7 @@ public:
     OpenSoT::tasks::velocity::Cartesian::Ptr taskRSole;
 
 
-    ~the_dying_swan_problem();
+    ~the_dying_swan_problem(){}
 };
 
 #endif //__THE_DYING_SWAN_PROBLEM__
