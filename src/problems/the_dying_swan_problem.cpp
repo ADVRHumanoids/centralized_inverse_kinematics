@@ -25,6 +25,9 @@ boost::shared_ptr<the_dying_swan_problem::ik_problem> the_dying_swan_problem::cr
         taskRWrist->setOrientationErrorGain(0.1);
         taskRWrist_interface = YCartesian::Ptr(new YCartesian(robot_model.getRobotName(), name_space, taskRWrist));
 
+        taskCoM = CoM::Ptr(new CoM(state, robot_model));
+        taskCoM_interface = YCoM::Ptr(new YCoM(robot_model.getRobotName(), name_space, taskCoM));
+
         /** 2) Postural **/
         Postural::Ptr taskPostural(Postural::Ptr(new Postural(state)));
 
@@ -45,6 +48,7 @@ boost::shared_ptr<the_dying_swan_problem::ik_problem> the_dying_swan_problem::cr
 
         /** 2) Second priority Stack **/
         taskList.clear();
+        taskList.push_back(taskCoM);
         taskList.push_back(taskRWrist);
         problem->stack_of_tasks.push_back(OpenSoT::tasks::Aggregated::TaskPtr(new OpenSoT::tasks::Aggregated(taskList, state.size())));
 

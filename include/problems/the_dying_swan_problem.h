@@ -19,6 +19,9 @@ public:
 
     OpenSoT::tasks::velocity::Cartesian::Ptr taskRSole;
 
+    OpenSoT::tasks::velocity::CoM::Ptr taskCoM;
+    OpenSoT::interfaces::yarp::tasks::YCoM::Ptr taskCoM_interface;
+
 
     ~the_dying_swan_problem(){}
 };
