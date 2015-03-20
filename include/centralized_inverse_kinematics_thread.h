@@ -40,8 +40,8 @@ private:
     
 public:
     //boost::shared_ptr<simple_problem> ik_problem;
-    //boost::shared_ptr<interaction_problem> ik_problem;
-    boost::shared_ptr<wb_manip_problem> ik_problem;
+    boost::shared_ptr<interaction_problem> ik_problem;
+    //boost::shared_ptr<wb_manip_problem> ik_problem;
 
     boost::shared_ptr<OpenSoT::solvers::QPOases_sot> qp_solver;
     

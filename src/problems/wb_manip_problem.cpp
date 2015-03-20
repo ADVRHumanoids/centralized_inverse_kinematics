@@ -20,6 +20,8 @@ boost::shared_ptr<wb_manip_problem::ik_problem> wb_manip_problem::create_problem
                                                                              iDynUtils& robot_model, const double dT,
                                                                              const std::string& name_space)
 {
+    double lambda = 100.0;
+
     /** Create Constraints **/
         /** 1) Constraint Convex Hull **/
         ConvexHull::Ptr constraintConvexHull(ConvexHull::Ptr(new ConvexHull(state, robot_model, 0.05)));
@@ -33,13 +35,16 @@ boost::shared_ptr<wb_manip_problem::ik_problem> wb_manip_problem::create_problem
         taskRWrist = Cartesian::Ptr(new Cartesian("cartesian::r_arm", state, robot_model,
                                                   robot_model.right_arm.end_effector_name, "world"));
         taskRWrist->setOrientationErrorGain(0.5);
+        taskRWrist->setLambda(lambda);
         taskLWrist = Cartesian::Ptr(new Cartesian("cartesian::l_arm", state, robot_model,
                                                   robot_model.left_arm.end_effector_name, "world"));
         taskLWrist->setOrientationErrorGain(0.5);
+        taskLWrist->setLambda(lambda);
 
         /** 2) Cartesian Torso **/
         Cartesian::Ptr taskTorso(Cartesian::Ptr(new Cartesian("cartesian::torso",state,robot_model,"torso","world")));
         taskTorso->setOrientationErrorGain(0.5);
+        taskTorso->setLambda(lambda);
             /** 3.1) We want to control torso in /world frame using only the three joints in the torso **/
             std::vector<bool> active_joint_mask = taskTorso->getActiveJointsMask();
             for(unsigned int i = 0; i < robot_model.left_leg.getNrOfDOFs(); ++i)
@@ -54,9 +59,11 @@ boost::shared_ptr<wb_manip_problem::ik_problem> wb_manip_problem::create_problem
         /** 2) Cartesian RSole **/
         taskRSole = Cartesian::Ptr(new Cartesian("cartesian::r_sole",state,robot_model,
                                                   robot_model.right_leg.end_effector_name,"world"));
+        taskRSole->setLambda(lambda);
         /** 2) Cartesian Waist **/
         Cartesian::Ptr taskWaist(Cartesian::Ptr(new Cartesian("cartesian::Waist",state,robot_model,"Waist","world")));
         taskWaist->setOrientationErrorGain(0.5);
+        taskWaist->setLambda(lambda);
             /** 3.2) We are interested only in the orientation**/
             OpenSoT::SubTask::Ptr taskWaistOrientation(OpenSoT::SubTask::Ptr(
                                 new OpenSoT::SubTask(taskWaist, OpenSoT::SubTask::SubTaskMap::range(3,5))));
@@ -66,6 +73,7 @@ boost::shared_ptr<wb_manip_problem::ik_problem> wb_manip_problem::create_problem
 
         /** 4) Postural **/
         Postural::Ptr taskPostural(Postural::Ptr(new Postural(state)));
+        taskPostural->setLambda(lambda);
 
      /** Associate interfaces to tasks **/
         YRSoleCartesian = YCartesian::Ptr(new YCartesian(robot_model.getRobotName(), name_space, taskRSole));
@@ -78,7 +86,7 @@ boost::shared_ptr<wb_manip_problem::ik_problem> wb_manip_problem::create_problem
                                                                 robot_model.iDyn3_model.getJointBoundMax(),
                                                                 robot_model.iDyn3_model.getJointBoundMin())));
         /** 2) bounds joint velocities **/
-        VelocityLimits::ConstraintPtr boundsJointVelLimits(VelocityLimits::ConstraintPtr(new VelocityLimits(0.1,
+        VelocityLimits::ConstraintPtr boundsJointVelLimits(VelocityLimits::ConstraintPtr(new VelocityLimits(1.0,
                                                                 mSecToSec(dT), state.size())));
 
     /** Create Augmented (aggregated) tasks  and stack of tasks**/

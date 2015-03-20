@@ -53,16 +53,22 @@ bool centralized_inverse_kinematics_thread::custom_init()
     }
 
     //ik_problem = boost::shared_ptr<simple_problem>(new simple_problem());
-    //ik_problem = boost::shared_ptr<interaction_problem>(new interaction_problem());
-    ik_problem = boost::shared_ptr<wb_manip_problem>(new wb_manip_problem());
+    ik_problem = boost::shared_ptr<interaction_problem>(new interaction_problem());
+    //ik_problem = boost::shared_ptr<wb_manip_problem>(new wb_manip_problem());
 
     boost::shared_ptr<general_ik_problem::ik_problem> problem =
             ik_problem->create_problem(_q, robot.idynutils, get_thread_period(), get_module_prefix());
 
-//    yarp::sig::Vector desired_wrench(6, 0.0);
-//    desired_wrench = ik_problem->taskRWrist->getReferenceWrench();
-//    desired_wrench[0] = 25.0; desired_wrench[1] = 5.0; desired_wrench[2] = 5.0;
-//    ik_problem->taskRWrist->setReferenceWrench(desired_wrench);
+    KDL::Frame ee_in_base_link = robot.idynutils.iDyn3_model.getPositionKDL(robot.idynutils.iDyn3_model.getLinkIndex("r_wrist"));
+    yarp::sig::Vector desired_wrench(6, 0.0); KDL::Wrench desired_wrench_KDL;
+    desired_wrench = ik_problem->taskRWrist->getReferenceWrench();
+    cartesian_utils::fromYarpVectortoKDLWrench(desired_wrench, desired_wrench_KDL);
+    desired_wrench_KDL = ee_in_base_link.Inverse()*desired_wrench_KDL;
+    desired_wrench_KDL.force[1] = -8.0;
+    //desired_wrench_KDL.force[0] = 10.0; desired_wrench_KDL.force[1] = 5.0; desired_wrench_KDL.force[2] = -10.0;
+    desired_wrench_KDL = ee_in_base_link*desired_wrench_KDL;
+    cartesian_utils::fromKDLWrenchtoYarpVector(desired_wrench_KDL, desired_wrench);
+    ik_problem->taskRWrist->setReferenceWrench(desired_wrench);
 
     try{ qp_solver = OpenSoT::solvers::QPOases_sot::Ptr(new OpenSoT::solvers::QPOases_sot(
                                                                      problem->stack_of_tasks,
@@ -145,6 +151,7 @@ void centralized_inverse_kinematics_thread::run()
             std::string ft_joint_name = ft_link->getParentJointModel()->getName();
             int ft_index = robot.idynutils.iDyn3_model.getFTSensorIndex(ft_joint_name);
 
+            //We want the force that the robot is doing on the environment, for this we use -1!
             robot.idynutils.iDyn3_model.setSensorMeasurement(ft_index, -1.0*it->second);
         }
 
