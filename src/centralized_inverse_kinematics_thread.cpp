@@ -24,7 +24,7 @@ centralized_inverse_kinematics_thread::centralized_inverse_kinematics_thread(   
 {
     // setting floating base under left foot
     robot.idynutils.updateiDyn3Model(_q, true);
-    robot.idynutils.setFloatingBaseLink(robot.idynutils.left_leg.end_effector_name);
+    robot.idynutils.setFloatingBaseLink("l_sole");
 
     std::string topic_name = module_prefix + "/" + robot.idynutils.getRobotName() + "/joint_command";
     _joint_command_publisher = _n.advertise<sensor_msgs::JointState>(topic_name, 1);
