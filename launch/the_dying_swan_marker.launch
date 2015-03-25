@@ -9,4 +9,10 @@
        <param name="port_name" type="string" value="/bigman/centralized_inverse_kinematics/cartesian::RSoftHand" />
      </node>
 
+     <node pkg="open_sot" type="ros_yarp_postural_interactive_marker" name="ros_yarp_postural_interactive_marker" output="screen" >
+       <param name="urdf_path" type="string" value="$(find bigman_urdf)/urdf/bigman.urdf" />
+       <param name="srdf_path" type="string" value="$(find bigman_srdf)/srdf/bigman.srdf" />
+       <rosparam param="joint_names">["WaistSag"]</rosparam>
+       <param name="port_name" type="string" value="/bigman/centralized_inverse_kinematics/Postural" />
+     </node>
 </launch>

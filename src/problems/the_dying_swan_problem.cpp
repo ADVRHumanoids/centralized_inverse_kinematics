@@ -2,6 +2,7 @@
 #include <boost/shared_ptr.hpp>
 #include <OpenSoT/SubTask.h>
 
+
 #define mSecToSec(X) (X*0.001)
 
 using namespace OpenSoT::tasks::velocity;
@@ -41,6 +42,8 @@ boost::shared_ptr<the_dying_swan_problem::ik_problem> the_dying_swan_problem::cr
 
         /** 2) Postural **/
         Postural::Ptr taskPostural(Postural::Ptr(new Postural(state)));
+        taskPostural_interface = YPostural::Ptr(new YPostural(robot_model.getRobotName(), name_space,
+                                                              robot_model, taskPostural));
 
     /** Create bounds **/
         /** 1) bounds joint limits **/

@@ -25,6 +25,8 @@ public:
     OpenSoT::tasks::velocity::Cartesian::Ptr taskTorsoHead;
     OpenSoT::interfaces::yarp::tasks::YCartesian::Ptr taskTorsoHead_interface;
 
+    OpenSoT::interfaces::yarp::tasks::YPostural::Ptr taskPostural_interface;
+
 
     ~the_dying_swan_problem(){}
 };
