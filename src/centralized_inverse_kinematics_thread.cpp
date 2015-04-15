@@ -22,6 +22,16 @@ centralized_inverse_kinematics_thread::centralized_inverse_kinematics_thread(   
     _n()
     
 {
+    ROBOT::g_robot_name = get_robot_name();
+    ROBOT::g_urdf_path = get_urdf_path();
+    ROBOT::g_srdf_path = get_srdf_path();
+    ROBOT::g_motorControlLoopTime = 0.005;
+    ROBOT::g_IMUrefreshTime = 0.005;
+
+    yarp::sig::Matrix massMat;
+    robot.idynutils.iDyn3_model.getFloatingBaseMassMatrix(massMat);
+    ROBOT::g_totalMass = massMat(0,0);
+
     // setting floating base under left foot
     robot.idynutils.updateiDyn3Model(_q, true);
     robot.idynutils.setFloatingBaseLink(robot.idynutils.left_leg.end_effector_name);
@@ -53,22 +63,27 @@ bool centralized_inverse_kinematics_thread::custom_init()
     }
 
     //ik_problem = boost::shared_ptr<simple_problem>(new simple_problem());
-    ik_problem = boost::shared_ptr<interaction_problem>(new interaction_problem());
+    //ik_problem = boost::shared_ptr<interaction_problem>(new interaction_problem());
     //ik_problem = boost::shared_ptr<wb_manip_problem>(new wb_manip_problem());
+    ik_problem = boost::shared_ptr<walking_problem>(new walking_problem());
+
+    ik_problem->pattern_generator.reset(new Clocomotor(robot.getNumberOfJoints(), ROBOT::g_motorControlLoopTime));
+    ik_problem->walkingPatternGeneration(1.5, 7, 0.28, 0.05);
+
 
     boost::shared_ptr<general_ik_problem::ik_problem> problem =
             ik_problem->create_problem(_q, robot.idynutils, get_thread_period(), get_module_prefix());
 
-    KDL::Frame ee_in_base_link = robot.idynutils.iDyn3_model.getPositionKDL(robot.idynutils.iDyn3_model.getLinkIndex("r_wrist"));
-    yarp::sig::Vector desired_wrench(6, 0.0); KDL::Wrench desired_wrench_KDL;
-    desired_wrench = ik_problem->taskRWrist->getReferenceWrench();
-    cartesian_utils::fromYarpVectortoKDLWrench(desired_wrench, desired_wrench_KDL);
-    desired_wrench_KDL = ee_in_base_link.Inverse()*desired_wrench_KDL;
-    desired_wrench_KDL.force[1] = -8.0;
-    //desired_wrench_KDL.force[0] = 10.0; desired_wrench_KDL.force[1] = 5.0; desired_wrench_KDL.force[2] = -10.0;
-    desired_wrench_KDL = ee_in_base_link*desired_wrench_KDL;
-    cartesian_utils::fromKDLWrenchtoYarpVector(desired_wrench_KDL, desired_wrench);
-    ik_problem->taskRWrist->setReferenceWrench(desired_wrench);
+//    KDL::Frame ee_in_base_link = robot.idynutils.iDyn3_model.getPositionKDL(robot.idynutils.iDyn3_model.getLinkIndex("r_wrist"));
+//    yarp::sig::Vector desired_wrench(6, 0.0); KDL::Wrench desired_wrench_KDL;
+//    desired_wrench = ik_problem->taskRWrist->getReferenceWrench();
+//    cartesian_utils::fromYarpVectortoKDLWrench(desired_wrench, desired_wrench_KDL);
+//    desired_wrench_KDL = ee_in_base_link.Inverse()*desired_wrench_KDL;
+//    desired_wrench_KDL.force[1] = -8.0;
+//    //desired_wrench_KDL.force[0] = 10.0; desired_wrench_KDL.force[1] = 5.0; desired_wrench_KDL.force[2] = -10.0;
+//    desired_wrench_KDL = ee_in_base_link*desired_wrench_KDL;
+//    cartesian_utils::fromKDLWrenchtoYarpVector(desired_wrench_KDL, desired_wrench);
+//    ik_problem->taskRWrist->setReferenceWrench(desired_wrench);
 
     try{ qp_solver = OpenSoT::solvers::QPOases_sot::Ptr(new OpenSoT::solvers::QPOases_sot(
                                                                      problem->stack_of_tasks,
@@ -143,6 +158,14 @@ void centralized_inverse_kinematics_thread::run()
 
         /** Update Models **/
         robot.idynutils.updateiDyn3Model(_q,true);
+        int stance_foot = 1;
+        if(ik_problem->updateWalkingPattern(ik_problem->LFootRef, ik_problem->RFootRef,
+                                            ik_problem->pelvisRef, ik_problem->comRef, stance_foot))
+        {
+            ik_problem->log(ik_problem->LFootRef, ik_problem->RFootRef);
+        }
+        else
+            ROS_ERROR("WALKING PATTERN GENERATOR RETUNR ERROR!");
 
         for(RobotUtils::ftReadings::iterator it = ft_readings.begin(); it != ft_readings.end(); it++)
         {

@@ -50,9 +50,11 @@ FIND_PACKAGE(OpenSoT REQUIRED)
 FIND_PACKAGE(roscpp REQUIRED)
 FIND_PACKAGE(moveit_core REQUIRED)
 FIND_PACKAGE(sensor_msgs REQUIRED)
+FIND_PACKAGE(walking REQUIRED)
 
 # add include directories
-INCLUDE_DIRECTORIES(include 
+INCLUDE_DIRECTORIES(include
+                    ${walking_INCLUDE_DIRS}/walking
 		    ${YARP_INCLUDE_DIRS} 
 		    ${idynutils_INCLUDE_DIRS}
 		    ${GYM_INCLUDE_DIRS}
@@ -71,9 +73,11 @@ ADD_EXECUTABLE(${PROJECT_NAME} src/centralized_inverse_kinematics_main.cpp
                                src/problems/simple_problem.cpp
 src/problems/interaction_problem.cpp
 src/problems/wb_manip_problem.cpp
+src/problems/walking_problem.cpp
 			          )
 
-TARGET_LINK_LIBRARIES(${PROJECT_NAME} ${iDynTree_LIBRARIES}
+TARGET_LINK_LIBRARIES(${PROJECT_NAME} ${walking_LIBRARIES}
+                                      ${iDynTree_LIBRARIES}
                                       ${YARP_LIBRARIES}
 				      ${idynutils_LIBRARIES}
 				      ${GYM_LIBRARIES}
