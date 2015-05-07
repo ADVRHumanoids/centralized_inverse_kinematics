@@ -72,7 +72,7 @@ bool centralized_inverse_kinematics_thread::custom_init()
 
 
     boost::shared_ptr<general_ik_problem::ik_problem> problem =
-            ik_problem->create_problem(_q, robot.idynutils, get_thread_period(), get_module_prefix());
+            ik_problem->homing_problem(_q, robot.idynutils, get_thread_period(), get_module_prefix());
 
 //    KDL::Frame ee_in_base_link = robot.idynutils.iDyn3_model.getPositionKDL(robot.idynutils.iDyn3_model.getLinkIndex("r_wrist"));
 //    yarp::sig::Vector desired_wrench(6, 0.0); KDL::Wrench desired_wrench_KDL;
@@ -85,10 +85,9 @@ bool centralized_inverse_kinematics_thread::custom_init()
 //    cartesian_utils::fromKDLWrenchtoYarpVector(desired_wrench_KDL, desired_wrench);
 //    ik_problem->taskRWrist->setReferenceWrench(desired_wrench);
 
-    try{ qp_solver = OpenSoT::solvers::QPOases_sot::Ptr(new OpenSoT::solvers::QPOases_sot(
-                                                                     problem->stack_of_tasks,
-                                                                     problem->bounds,
-                                                                     problem->damped_least_square_eps));}
+    try{ qp_solver.reset(new OpenSoT::solvers::QPOases_sot(problem->stack_of_tasks,
+                                                           problem->bounds,
+                                                           problem->damped_least_square_eps));}
     catch (const char* s){
         ROS_ERROR(s);
         ROS_ERROR("The Module will be stopped.");
@@ -158,14 +157,32 @@ void centralized_inverse_kinematics_thread::run()
 
         /** Update Models **/
         robot.idynutils.updateiDyn3Model(_q,true);
-        int stance_foot = 1;
-        if(ik_problem->updateWalkingPattern(ik_problem->LFootRef, ik_problem->RFootRef,
-                                            ik_problem->pelvisRef, ik_problem->comRef, stance_foot))
-        {
-            ik_problem->log(ik_problem->LFootRef, ik_problem->RFootRef);
+
+
+        if(ik_problem->reset_solver && ik_problem->homing_done){
+
+            ROS_INFO("PRESS A KEY TO START WALKING PATTERN GENERATOR");
+
+            if(!ik_problem->start_walking_pattern){
+                cin.get();
+                ik_problem->start_walking_pattern = true;
+            }
+
+
+            int stance_foot = 1;
+            if(ik_problem->updateWalkingPattern(ik_problem->LFootRef, ik_problem->RFootRef,
+                                                ik_problem->pelvisRef, ik_problem->comRef, stance_foot) &&
+               !ik_problem->walking_pattern_finished){
+                ik_problem->log(ik_problem->LFootRef, ik_problem->RFootRef, ik_problem->pelvisRef);
+                ik_problem->switchSupportFoot(robot.idynutils, stance_foot);
+
+                ik_problem->taskLFoot->setReference(ik_problem->LFootRef);
+                ik_problem->taskRFoot->setReference(ik_problem->RFootRef);
+                ik_problem->taskPelvis->setReference(ik_problem->pelvisRef);
+            }
+            else
+                ROS_ERROR_ONCE("WALKING PATTERN GENERATOR RETURN ERROR OR FINISHED!");
         }
-        else
-            ROS_ERROR("WALKING PATTERN GENERATOR RETUNR ERROR!");
 
         for(RobotUtils::ftReadings::iterator it = ft_readings.begin(); it != ft_readings.end(); it++)
         {
@@ -180,6 +197,18 @@ void centralized_inverse_kinematics_thread::run()
 
         /** Update OpenSoTServer **/
         ik_problem->update(_q);
+
+        if(ik_problem->homing_done && !ik_problem->reset_solver)
+        {
+            boost::shared_ptr<general_ik_problem::ik_problem> walking_problem =
+                    ik_problem->create_problem(_q, robot.idynutils, get_thread_period(), get_module_prefix());
+
+            qp_solver.reset();
+            qp_solver.reset(new OpenSoT::solvers::QPOases_sot(walking_problem->stack_of_tasks,
+                                                              walking_problem->bounds,
+                                                              walking_problem->damped_least_square_eps));
+            ik_problem->reset_solver = true;
+        }
 
 //        std::cout<<"Actual Wrench in "<<ik_problem->taskRWrist->getBaseLink();
 //        std::cout<<" ["<<ik_problem->taskRWrist->getActualWrench().toString()<<"]"<<std::endl;
