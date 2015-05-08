@@ -1,6 +1,7 @@
 #include <problems/walking_problem.h>
 #include <boost/shared_ptr.hpp>
 #include <ros/console.h>
+#include <OpenSoT/SubTask.h>
 
 #define mSecToSec(X) (X*0.001)
 
@@ -8,9 +9,10 @@ using namespace OpenSoT::tasks::velocity;
 using namespace OpenSoT::constraints::velocity;
 using namespace yarp::sig;
 
-walking_problem::walking_problem():
+walking_problem::walking_problem(iDynUtils& robot_model):
     general_ik_problem(),
-    n()
+    n(),
+    _robot_model(robot_model)
 {
     file_l_foot.open("positions_ref_l_foot.m");
     file_r_foot.open("positions_ref_r_foot.m");
@@ -64,22 +66,6 @@ boost::shared_ptr<walking_problem::ik_problem> walking_problem::create_problem(c
                                                                              iDynUtils& robot_model, const double dT,
                                                                              const std::string& name_space)
 {
-    KDL::Frame l_ankle_T_World; l_ankle_T_World.Identity();
-    l_ankle_T_World.p[0] = 0.0; l_ankle_T_World.p[1] = -0.14; l_ankle_T_World.p[2] = -0.143;
-    robot_model.setAnchor_T_World(l_ankle_T_World);
-
-    geometry_msgs::TransformStamped T;
-    T.header.frame_id = "l_ankle";
-    T.child_frame_id = "world";
-    T.transform.rotation.x = 0.0;
-    T.transform.rotation.y = 0.0;
-    T.transform.rotation.z = 0.0;
-    T.transform.rotation.w = 1.0;
-    T.transform.translation.x = l_ankle_T_World.p[0];
-    T.transform.translation.y = l_ankle_T_World.p[1];
-    T.transform.translation.z = l_ankle_T_World.p[2];
-    new_world_pub.publish(T);
-
     taskRFoot.reset();
     taskLFoot.reset();
     taskPelvis.reset();
@@ -90,17 +76,26 @@ boost::shared_ptr<walking_problem::ik_problem> walking_problem::create_problem(c
 
     /** Create Tasks **/
     taskRFoot.reset(new Cartesian("cartesian::RFoot",state,robot_model,
-        robot_model.right_leg.end_effector_name,"world"));
+        "r_ankle","world"));
+    std::cout<<"RFootRef:"<<std::endl;
+    cartesian_utils::printHomogeneousTransform(taskRFoot->getReference());
+
     taskLFoot.reset(new Cartesian("cartesian::LFoot",state,robot_model,
-        robot_model.left_leg.end_effector_name,"world"));
+        "l_ankle","world"));
+    std::cout<<"LFootRef:"<<std::endl;
+    cartesian_utils::printHomogeneousTransform(taskLFoot->getReference());
+
     taskPelvis.reset(new Cartesian("cartesian::Waist", state, robot_model,
         "Waist", "world"));
+    std::cout<<"PelvisRef:"<<std::endl;
+    cartesian_utils::printHomogeneousTransform(taskPelvis->getReference());
+
     taskPostural.reset(new Postural(state));
     /** Create bounds **/
     JointLimits::ConstraintPtr boundJointLimits(JointLimits::ConstraintPtr(new JointLimits(state,
         robot_model.iDyn3_model.getJointBoundMax(), robot_model.iDyn3_model.getJointBoundMin())));
     VelocityLimits::ConstraintPtr boundsJointVelLimits(VelocityLimits::ConstraintPtr(
-        new VelocityLimits(1.0, mSecToSec(dT), state.size())));
+        new VelocityLimits(M_PI_2, mSecToSec(dT), state.size())));
 
     std::list<OpenSoT::tasks::Aggregated::TaskPtr> taskList;
     taskList.push_back(taskRFoot);
@@ -130,6 +125,9 @@ boost::shared_ptr<walking_problem::ik_problem> walking_problem::homing_problem(c
                     iDynUtils& robot_model,const double dT,
                     const std::string& name_space)
 {
+    /** CH **/
+    ConvexHull::Ptr ch = ConvexHull::Ptr(new ConvexHull(state, robot_model, 0.06));
+
     /** Create Tasks **/
     taskRFoot.reset(new Cartesian("cartesian::RFoot_Waist",state,robot_model,
         robot_model.right_leg.end_effector_name,"Waist"));
@@ -143,27 +141,52 @@ boost::shared_ptr<walking_problem::ik_problem> walking_problem::homing_problem(c
     LFootReference(0,3) = 0.093; LFootReference(1,3) = 0.14; LFootReference(2,3) = -1.09;
     taskLFoot->setReference(LFootReference);
 
+    Cartesian::Ptr taskTorso = Cartesian::Ptr(new Cartesian("cartesian::Torso_Waist", state, robot_model,
+                                                            "torso", "world"));
+    std::vector<bool> active_joint_mask = taskTorso->getActiveJointsMask();
+    for(unsigned int i = 0; i < 6; ++i)
+        active_joint_mask[robot_model.left_leg.joint_numbers[i]] = false;
+    taskTorso->setActiveJointsMask(active_joint_mask);
+    OpenSoT::SubTask::Ptr subTaskTorso = OpenSoT::SubTask::Ptr(
+        new OpenSoT::SubTask(taskTorso, OpenSoT::SubTask::SubTaskMap::range(3,5)));
+
     taskPostural.reset(new Postural(state));
     yarp::sig::Vector q_postural(state.size(), 0.0);
+    q_postural[robot_model.left_leg.joint_numbers[3]] = 10.0*M_PI/180.0;
+    q_postural[robot_model.right_leg.joint_numbers[3]] = 10.0*M_PI/180.0;
+    taskPostural->setReference(q_postural);
+
     /** Create bounds **/
+    yarp::sig::Vector joint_bound_max = robot_model.iDyn3_model.getJointBoundMax();
+    yarp::sig::Vector joint_bound_min = robot_model.iDyn3_model.getJointBoundMin();
+    for(unsigned int i = 0; i < 6; ++i)
+    {
+        joint_bound_max[robot_model.left_leg.joint_numbers[i]] = M_PI;
+        joint_bound_min[robot_model.left_leg.joint_numbers[i]] = -M_PI;
+        joint_bound_max[robot_model.right_leg.joint_numbers[i]] = M_PI;
+        joint_bound_min[robot_model.right_leg.joint_numbers[i]] = -M_PI;
+    }
     JointLimits::ConstraintPtr boundJointLimits(JointLimits::ConstraintPtr(new JointLimits(state,
-        robot_model.iDyn3_model.getJointBoundMax(), robot_model.iDyn3_model.getJointBoundMin())));
+        joint_bound_max, joint_bound_min)));
     VelocityLimits::ConstraintPtr boundsJointVelLimits(VelocityLimits::ConstraintPtr(
-        new VelocityLimits(0.4, mSecToSec(dT), state.size())));
+        new VelocityLimits(0.1, mSecToSec(dT), state.size())));
 
     std::list<OpenSoT::tasks::Aggregated::TaskPtr> taskList;
+    taskList.push_back(subTaskTorso);
     taskList.push_back(taskRFoot);
     taskList.push_back(taskLFoot);
     problem->stack_of_tasks.push_back(OpenSoT::tasks::Aggregated::TaskPtr(
         new OpenSoT::tasks::Aggregated(taskList, state.size())));
+    problem->stack_of_tasks[0]->getConstraints().push_back(ch);
 
     taskList.clear();
     taskList.push_back(taskPostural);
     problem->stack_of_tasks.push_back(OpenSoT::tasks::Aggregated::TaskPtr(
         new OpenSoT::tasks::Aggregated(taskList, state.size())));
+    problem->stack_of_tasks[1]->getConstraints().push_back(ch);
 
     std::list<OpenSoT::constraints::Aggregated::ConstraintPtr> bounds;
-    //bounds.push_back(boundJointLimits);
+    bounds.push_back(boundJointLimits);
     bounds.push_back(boundsJointVelLimits);
     problem->bounds = OpenSoT::constraints::Aggregated::Ptr(
         new OpenSoT::constraints::Aggregated(bounds, state.size()));
@@ -177,10 +200,12 @@ return problem;
 bool walking_problem::switchSupportFoot(iDynUtils& robot_model, const int trj_stance_foot)
 {
     if(trj_stance_foot != stance_foot){
-        if(trj_stance_foot == STANCE_FOOT::LEFT_FOOT)
-            robot_model.switchAnchorAndFloatingBase(robot_model.left_leg.end_effector_name);
-        if(trj_stance_foot == STANCE_FOOT::RIGHT_FOOT)
-            robot_model.switchAnchorAndFloatingBase(robot_model.right_leg.end_effector_name);
+        if(trj_stance_foot == STANCE_FOOT::LEFT_FOOT){
+            robot_model.switchAnchorAndFloatingBase("l_ankle");
+            stance_foot = STANCE_FOOT::LEFT_FOOT;}
+        if(trj_stance_foot == STANCE_FOOT::RIGHT_FOOT){
+            robot_model.switchAnchorAndFloatingBase("r_ankle");
+            stance_foot = STANCE_FOOT::RIGHT_FOOT;}
     }
 }
 

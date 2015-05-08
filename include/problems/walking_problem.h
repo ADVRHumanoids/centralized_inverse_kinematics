@@ -16,7 +16,7 @@ class walking_problem: public general_ik_problem {
     };
 
 public:
-    walking_problem();
+    walking_problem(iDynUtils &robot_model);
 
     boost::shared_ptr<ik_problem> homing_problem(const yarp::sig::Vector& state,
                         iDynUtils& robot_model,const double dT,
@@ -59,6 +59,7 @@ private: void generateFootSteps(const int number_of_steps, const double step_wid
     int stance_foot;
     ros::NodeHandle n;
     ros::Publisher new_world_pub;
+    iDynUtils& _robot_model;
 public: bool walkingPatternGeneration(const double step_time, const int number_of_steps,
                                       const double step_width, const double step_lenght);
     bool updateWalkingPattern(yarp::sig::Matrix& LFootRef, yarp::sig::Matrix& RFootRef,
@@ -82,6 +83,26 @@ public: bool walkingPatternGeneration(const double step_time, const int number_o
             {
                 ROS_WARN("HOMING DONE!");
                 homing_done = true;
+
+                KDL::Frame l_ankle_T_World; l_ankle_T_World.Identity();
+                l_ankle_T_World.p[0] = 0.0; l_ankle_T_World.p[1] = -0.14; l_ankle_T_World.p[2] = -0.143;
+                _robot_model.switchAnchor("l_ankle");
+                _robot_model.setAnchor_T_World(l_ankle_T_World);
+                _robot_model.updateiDyn3Model(state,true);
+
+                geometry_msgs::TransformStamped T;
+                T.header.frame_id = "l_ankle";
+                T.child_frame_id = "world";
+                T.transform.rotation.x = 0.0;
+                T.transform.rotation.y = 0.0;
+                T.transform.rotation.z = 0.0;
+                T.transform.rotation.w = 1.0;
+                T.transform.translation.x = l_ankle_T_World.p[0];
+                T.transform.translation.y = l_ankle_T_World.p[1];
+                T.transform.translation.z = l_ankle_T_World.p[2];
+                new_world_pub.publish(T);
+
+                ROS_WARN("SET NEW WORLD POSE!");
             }
         }
     }

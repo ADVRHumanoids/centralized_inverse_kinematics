@@ -36,6 +36,7 @@ centralized_inverse_kinematics_thread::centralized_inverse_kinematics_thread(   
     robot.idynutils.updateiDyn3Model(_q, true);
     robot.idynutils.setFloatingBaseLink(robot.idynutils.left_leg.end_effector_name);
 
+
     std::string topic_name = module_prefix + "/" + robot.idynutils.getRobotName() + "/joint_command";
     _joint_command_publisher = _n.advertise<sensor_msgs::JointState>(topic_name, 1);
 }
@@ -65,7 +66,7 @@ bool centralized_inverse_kinematics_thread::custom_init()
     //ik_problem = boost::shared_ptr<simple_problem>(new simple_problem());
     //ik_problem = boost::shared_ptr<interaction_problem>(new interaction_problem());
     //ik_problem = boost::shared_ptr<wb_manip_problem>(new wb_manip_problem());
-    ik_problem = boost::shared_ptr<walking_problem>(new walking_problem());
+    ik_problem = boost::shared_ptr<walking_problem>(new walking_problem(robot.idynutils));
 
     ik_problem->pattern_generator.reset(new Clocomotor(robot.getNumberOfJoints(), ROBOT::g_motorControlLoopTime));
     ik_problem->walkingPatternGeneration(1.5, 7, 0.28, 0.05);
@@ -161,9 +162,9 @@ void centralized_inverse_kinematics_thread::run()
 
         if(ik_problem->reset_solver && ik_problem->homing_done){
 
-            ROS_INFO("PRESS A KEY TO START WALKING PATTERN GENERATOR");
 
             if(!ik_problem->start_walking_pattern){
+                ROS_INFO("PRESS A KEY TO START WALKING PATTERN GENERATOR");
                 cin.get();
                 ik_problem->start_walking_pattern = true;
             }
@@ -200,14 +201,16 @@ void centralized_inverse_kinematics_thread::run()
 
         if(ik_problem->homing_done && !ik_problem->reset_solver)
         {
+            qp_solver.reset();
+
+            ROS_WARN("RESET PROBLEM AND SOLVER");
             boost::shared_ptr<general_ik_problem::ik_problem> walking_problem =
                     ik_problem->create_problem(_q, robot.idynutils, get_thread_period(), get_module_prefix());
 
-            qp_solver.reset();
             qp_solver.reset(new OpenSoT::solvers::QPOases_sot(walking_problem->stack_of_tasks,
                                                               walking_problem->bounds,
                                                               walking_problem->damped_least_square_eps));
-            ik_problem->reset_solver = true;
+            ik_problem->reset_solver = true;           
         }
 
 //        std::cout<<"Actual Wrench in "<<ik_problem->taskRWrist->getBaseLink();
