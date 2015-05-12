@@ -29,7 +29,9 @@ public:
     OpenSoT::tasks::velocity::Cartesian::Ptr taskRFoot;
     OpenSoT::tasks::velocity::Cartesian::Ptr taskLFoot;
     OpenSoT::tasks::velocity::Cartesian::Ptr taskPelvis;
+    OpenSoT::tasks::velocity::CoM::Ptr taskCoM;
     OpenSoT::tasks::velocity::Postural::Ptr taskPostural;
+
 
     yarp::sig::Matrix LFootRef;
     yarp::sig::Matrix RFootRef;
@@ -38,9 +40,15 @@ public:
 
     ~walking_problem();
 
+    ofstream file_r_footd;
+    ofstream file_l_footd;
+    ofstream file_pelvisd;
+    ofstream file_comd;
+
     ofstream file_r_foot;
     ofstream file_l_foot;
     ofstream file_pelvis;
+    ofstream file_com;
 
     bool switchSupportFoot(iDynUtils& robot_model, const int trj_stance_foot);
 
@@ -66,7 +74,7 @@ public: bool walkingPatternGeneration(const double step_time, const int number_o
                               yarp::sig::Matrix& PelvisRef, yarp::sig::Vector& CoMRef,
                               int& stance_foot);
     void log(const yarp::sig::Matrix& LFootRef, const yarp::sig::Matrix& RFootRef,
-             const yarp::sig::Matrix& PelvisRef);
+             const yarp::sig::Matrix& PelvisRef,const yarp::sig::Vector& CoMRef);
 
     virtual bool update(const yarp::sig::Vector& state)
     {

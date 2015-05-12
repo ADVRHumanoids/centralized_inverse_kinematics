@@ -16,6 +16,7 @@ centralized_inverse_kinematics_thread::centralized_inverse_kinematics_thread(   
     _dq( robot.idynutils.iDyn3_model.getNrOfDOFs(), 0.0 ),
     _tau( robot.idynutils.iDyn3_model.getNrOfDOFs(), 0.0 ),
     _dq_ref( robot.idynutils.iDyn3_model.getNrOfDOFs(), 0.0 ),
+    _q_ref( robot.idynutils.iDyn3_model.getNrOfDOFs(), 0.0 ),
     ik_problem(),
     _is_phantom(true),
     _is_clik(false),
@@ -49,6 +50,7 @@ bool centralized_inverse_kinematics_thread::custom_init()
     ph->linkParam( IS_CLIK_ID, &_is_clik );
 
     robot.sense(_q, _dq, _tau);
+    _q_ref = _q;
     robot.idynutils.updateiDyn3Model(_q, true);
 
     RobotUtils::ftReadings ft_readings = robot.senseftSensors();
@@ -98,14 +100,14 @@ bool centralized_inverse_kinematics_thread::custom_init()
     if(qp_solver->solve(_dq_ref))
     {
         robot.setPositionDirectMode();
-        yarp::sig::Vector q_ref = _q;
-        q_ref += _dq_ref;
+        //yarp::sig::Vector q_ref = _q;
+        _q_ref += _dq_ref;
         if(_is_phantom){
             ros::spinOnce();
 
             sensor_msgs::JointState joint_msg;
-            for(unsigned int i = 0; i < q_ref.size(); ++i){
-                joint_msg.position.push_back(q_ref[i]);
+            for(unsigned int i = 0; i < _q_ref.size(); ++i){
+                joint_msg.position.push_back(_q_ref[i]);
                 joint_msg.effort.push_back(0.0);
                 joint_msg.velocity.push_back(_dq_ref[i]/(get_thread_period()*0.001));
                 joint_msg.name.push_back(robot.getJointNames()[i]);}
@@ -113,7 +115,7 @@ bool centralized_inverse_kinematics_thread::custom_init()
             _joint_command_publisher.publish(joint_msg);
         }
         else
-            robot.move(q_ref);
+            robot.move(_q_ref);
 
         ROS_INFO("SoT is succesfully intialized!");
 
@@ -174,12 +176,14 @@ void centralized_inverse_kinematics_thread::run()
             if(ik_problem->updateWalkingPattern(ik_problem->LFootRef, ik_problem->RFootRef,
                                                 ik_problem->pelvisRef, ik_problem->comRef, stance_foot) &&
                !ik_problem->walking_pattern_finished){
-                ik_problem->log(ik_problem->LFootRef, ik_problem->RFootRef, ik_problem->pelvisRef);
+                ik_problem->log(ik_problem->LFootRef, ik_problem->RFootRef,
+                                ik_problem->pelvisRef, ik_problem->comRef);
                 ik_problem->switchSupportFoot(robot.idynutils, stance_foot);
 
                 ik_problem->taskLFoot->setReference(ik_problem->LFootRef);
                 ik_problem->taskRFoot->setReference(ik_problem->RFootRef);
                 ik_problem->taskPelvis->setReference(ik_problem->pelvisRef);
+                ik_problem->taskCoM->setReference(ik_problem->comRef);
             }
             else
                 ROS_ERROR_ONCE("WALKING PATTERN GENERATOR RETURN ERROR OR FINISHED!");
@@ -192,8 +196,13 @@ void centralized_inverse_kinematics_thread::run()
             std::string ft_joint_name = ft_link->getParentJointModel()->getName();
             int ft_index = robot.idynutils.iDyn3_model.getFTSensorIndex(ft_joint_name);
 
-            //We want the force that the robot is doing on the environment, for this we use -1!
-            robot.idynutils.iDyn3_model.setSensorMeasurement(ft_index, -1.0*it->second);
+            int sign = 1.0;
+            if(ft_joint_name == "l_arm_ft" || ft_joint_name == "r_arm_ft"){
+                //We want the force that the robot is doing on the environment, for this we use -1 in the arms!
+                sign = -1.0;
+            }
+
+            robot.idynutils.iDyn3_model.setSensorMeasurement(ft_index, sign*it->second);
         }
 
         /** Update OpenSoTServer **/
@@ -219,14 +228,14 @@ void centralized_inverse_kinematics_thread::run()
 
         if(qp_solver->solve(_dq_ref))
         {
-            yarp::sig::Vector q_ref = _q;
-            q_ref += _dq_ref;
+            //yarp::sig::Vector q_ref = _q;
+            _q_ref += _dq_ref;
             if(tmp_is_phantom){
                 ros::spinOnce();
 
                 sensor_msgs::JointState joint_msg;
-                for(unsigned int i = 0; i < q_ref.size(); ++i){
-                    joint_msg.position.push_back(q_ref[i]);
+                for(unsigned int i = 0; i < _q_ref.size(); ++i){
+                    joint_msg.position.push_back(_q_ref[i]);
                     joint_msg.effort.push_back(0.0);
                     joint_msg.velocity.push_back(_dq_ref[i]/(get_thread_period()*0.001));
                     joint_msg.name.push_back(robot.getJointNames()[i]);}
@@ -234,7 +243,7 @@ void centralized_inverse_kinematics_thread::run()
                 _joint_command_publisher.publish(joint_msg);
             }
             else
-                robot.move(q_ref);
+                robot.move(_q_ref);
         }
         else{
             _dq_ref = 0.0;

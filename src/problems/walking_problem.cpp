@@ -14,13 +14,25 @@ walking_problem::walking_problem(iDynUtils& robot_model):
     n(),
     _robot_model(robot_model)
 {
-    file_l_foot.open("positions_ref_l_foot.m");
-    file_r_foot.open("positions_ref_r_foot.m");
-    file_pelvis.open("positions_ref_pelvis.m");
+    file_l_footd.open("positions_ref_l_foot.m");
+    file_r_footd.open("positions_ref_r_foot.m");
+    file_pelvisd.open("positions_ref_pelvis.m");
+    file_comd.open("positions_ref_com.m");
 
-    file_l_foot<<"ref_l_foot = ["<<std::endl;
-    file_r_foot<<"ref_r_foot = ["<<std::endl;
-    file_pelvis<<"ref_pelvis = ["<<std::endl;
+    file_l_foot.open("positions_sot_l_foot.m");
+    file_r_foot.open("positions_sot_r_foot.m");
+    file_pelvis.open("positions_sot_pelvis.m");
+    file_com.open("positions_sot_com.m");
+
+    file_l_footd<<"ref_l_foot = ["<<std::endl;
+    file_r_footd<<"ref_r_foot = ["<<std::endl;
+    file_pelvisd<<"ref_pelvis = ["<<std::endl;
+    file_comd<<"ref_com = ["<<std::endl;
+
+    file_l_foot<<"sot_l_foot = ["<<std::endl;
+    file_r_foot<<"sot_r_foot = ["<<std::endl;
+    file_pelvis<<"sot_pelvis = ["<<std::endl;
+    file_com<<"sot_com = ["<<std::endl;
 
     walking_pattern_finished = true;
     homing_done = false;
@@ -35,31 +47,61 @@ walking_problem::walking_problem(iDynUtils& robot_model):
 
 walking_problem::~walking_problem()
 {
-    file_l_foot<<"]"<<std::endl;
-    file_r_foot<<"]"<<std::endl;
-    file_pelvis<<"]"<<std::endl;
+    file_l_footd<<"];"<<std::endl;
+    file_r_footd<<"];"<<std::endl;
+    file_pelvisd<<"];"<<std::endl;
+    file_comd<<"];"<<std::endl;
+    file_l_footd.close();
+    file_r_footd.close();
+    file_pelvisd.close();
+    file_comd.close();
+
+    file_l_foot<<"];"<<std::endl;
+    file_r_foot<<"];"<<std::endl;
+    file_pelvis<<"];"<<std::endl;
+    file_com<<"];"<<std::endl;
     file_l_foot.close();
     file_r_foot.close();
     file_pelvis.close();
+    file_com.close();
 }
 
 void walking_problem::log(const yarp::sig::Matrix& LFootRef, const yarp::sig::Matrix& RFootRef,
-                          const yarp::sig::Matrix &PelvisRef)
+                          const yarp::sig::Matrix &PelvisRef, const yarp::sig::Vector& CoMRef)
 {
     KDL::Frame tmp;
     double roll, pitch, yaw;
 
     cartesian_utils::fromYARPMatrixtoKDLFrame(LFootRef, tmp);
     tmp.M.GetRPY(roll, pitch, yaw);
-    file_l_foot<<tmp.p[0]<<"  "<<tmp.p[1]<<"  "<<tmp.p[2]<<"  "<<roll<<"  "<<"  "<<pitch<<"  "<<yaw<<std::endl;
+    file_l_footd<<tmp.p[0]<<"  "<<tmp.p[1]<<"  "<<tmp.p[2]<<"  "<<roll<<"  "<<"  "<<pitch<<"  "<<yaw<<std::endl;
 
     cartesian_utils::fromYARPMatrixtoKDLFrame(RFootRef, tmp);
     tmp.M.GetRPY(roll, pitch, yaw);
-    file_r_foot<<tmp.p[0]<<"  "<<tmp.p[1]<<"  "<<tmp.p[2]<<"  "<<roll<<"  "<<"  "<<pitch<<"  "<<yaw<<std::endl;
+    file_r_footd<<tmp.p[0]<<"  "<<tmp.p[1]<<"  "<<tmp.p[2]<<"  "<<roll<<"  "<<"  "<<pitch<<"  "<<yaw<<std::endl;
 
     cartesian_utils::fromYARPMatrixtoKDLFrame(PelvisRef, tmp);
     tmp.M.GetRPY(roll, pitch, yaw);
+    file_pelvisd<<tmp.p[0]<<"  "<<tmp.p[1]<<"  "<<tmp.p[2]<<"  "<<roll<<"  "<<"  "<<pitch<<"  "<<yaw<<std::endl;
+
+    file_comd<<CoMRef[0]<<"  "<<CoMRef[1]<<"  "<<CoMRef[2]<<std::endl;
+
+
+
+
+    cartesian_utils::fromYARPMatrixtoKDLFrame(taskLFoot->getActualPose(), tmp);
+    tmp.M.GetRPY(roll, pitch, yaw);
+    file_l_foot<<tmp.p[0]<<"  "<<tmp.p[1]<<"  "<<tmp.p[2]<<"  "<<roll<<"  "<<"  "<<pitch<<"  "<<yaw<<std::endl;
+
+    cartesian_utils::fromYARPMatrixtoKDLFrame(taskRFoot->getActualPose(), tmp);
+    tmp.M.GetRPY(roll, pitch, yaw);
+    file_r_foot<<tmp.p[0]<<"  "<<tmp.p[1]<<"  "<<tmp.p[2]<<"  "<<roll<<"  "<<"  "<<pitch<<"  "<<yaw<<std::endl;
+
+    cartesian_utils::fromYARPMatrixtoKDLFrame(taskPelvis->getActualPose(), tmp);
+    tmp.M.GetRPY(roll, pitch, yaw);
     file_pelvis<<tmp.p[0]<<"  "<<tmp.p[1]<<"  "<<tmp.p[2]<<"  "<<roll<<"  "<<"  "<<pitch<<"  "<<yaw<<std::endl;
+
+    file_com<<taskCoM->getActualPosition()[0]<<"  "<<taskCoM->getActualPosition()[1]<<"  "<<taskCoM->getActualPosition()[2]<<std::endl;
 }
 
 boost::shared_ptr<walking_problem::ik_problem> walking_problem::create_problem(const Vector& state,
@@ -90,6 +132,15 @@ boost::shared_ptr<walking_problem::ik_problem> walking_problem::create_problem(c
     std::cout<<"PelvisRef:"<<std::endl;
     cartesian_utils::printHomogeneousTransform(taskPelvis->getReference());
 
+    taskCoM.reset(new CoM(state, robot_model));
+    yarp::sig::Vector com_ref(3,0.0);
+    com_ref[0] = 0.0;
+    com_ref[1] = 0.0;
+    com_ref[2] = 1.13;
+    taskCoM->setReference(com_ref);
+    std::cout<<"CoMRef:"<<std::endl;
+    std::cout<<taskCoM->getReference()[0]<<"  "<<taskCoM->getReference()[1]<<"  "<<taskCoM->getReference()[2]<<std::endl;
+
     taskPostural.reset(new Postural(state));
     /** Create bounds **/
     JointLimits::ConstraintPtr boundJointLimits(JointLimits::ConstraintPtr(new JointLimits(state,
@@ -101,6 +152,12 @@ boost::shared_ptr<walking_problem::ik_problem> walking_problem::create_problem(c
     taskList.push_back(taskRFoot);
     taskList.push_back(taskLFoot);
     taskList.push_back(taskPelvis);
+    //taskList.push_back(taskCoM);
+    problem->stack_of_tasks.push_back(OpenSoT::tasks::Aggregated::TaskPtr(
+        new OpenSoT::tasks::Aggregated(taskList, state.size())));
+
+    taskList.clear();
+    taskList.push_back(taskCoM);
     problem->stack_of_tasks.push_back(OpenSoT::tasks::Aggregated::TaskPtr(
         new OpenSoT::tasks::Aggregated(taskList, state.size())));
 
@@ -154,6 +211,10 @@ boost::shared_ptr<walking_problem::ik_problem> walking_problem::homing_problem(c
     yarp::sig::Vector q_postural(state.size(), 0.0);
     q_postural[robot_model.left_leg.joint_numbers[3]] = 10.0*M_PI/180.0;
     q_postural[robot_model.right_leg.joint_numbers[3]] = 10.0*M_PI/180.0;
+    q_postural[robot_model.left_arm.joint_numbers[3]] = -20.0*M_PI/180.0;
+    q_postural[robot_model.right_arm.joint_numbers[3]] = -20.0*M_PI/180.0;
+    q_postural[robot_model.left_arm.joint_numbers[0]] = 5.0*M_PI/180.0;
+    q_postural[robot_model.right_arm.joint_numbers[0]] = 5.0*M_PI/180.0;
     taskPostural->setReference(q_postural);
 
     /** Create bounds **/
@@ -200,13 +261,34 @@ return problem;
 bool walking_problem::switchSupportFoot(iDynUtils& robot_model, const int trj_stance_foot)
 {
     if(trj_stance_foot != stance_foot){
+        std::string string_stance_foot;
         if(trj_stance_foot == STANCE_FOOT::LEFT_FOOT){
             robot_model.switchAnchorAndFloatingBase("l_ankle");
-            stance_foot = STANCE_FOOT::LEFT_FOOT;}
+            stance_foot = STANCE_FOOT::LEFT_FOOT;
+            string_stance_foot = "l_ankle";}
         if(trj_stance_foot == STANCE_FOOT::RIGHT_FOOT){
             robot_model.switchAnchorAndFloatingBase("r_ankle");
-            stance_foot = STANCE_FOOT::RIGHT_FOOT;}
+            stance_foot = STANCE_FOOT::RIGHT_FOOT;
+            string_stance_foot = "r_ankle";}
+
+        geometry_msgs::TransformStamped T;
+        T.header.frame_id = string_stance_foot;
+        T.child_frame_id = "world";
+
+        KDL::Frame anchor = robot_model.getAnchor_T_World();
+        double qx,qy,qz,qw;
+        anchor.M.GetQuaternion(qx,qy,qz,qw);
+        T.transform.rotation.x = qx;
+        T.transform.rotation.y = qy;
+        T.transform.rotation.z = qz;
+        T.transform.rotation.w = qw;
+        T.transform.translation.x = anchor.p[0];
+        T.transform.translation.y = anchor.p[1];
+        T.transform.translation.z = anchor.p[2];
+        new_world_pub.publish(T);
     }
+
+    //robot_model.iDyn3_model.getSensorMeasurement(_ft_index, wrench_in_sensor_frame);
 }
 
 void walking_problem::generateFootSteps(const int number_of_steps, const double step_width, const double step_lenght)

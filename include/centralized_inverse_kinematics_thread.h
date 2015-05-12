@@ -29,6 +29,8 @@ private:
      */
     yarp::sig::Vector _dq_ref;
 
+    yarp::sig::Vector _q_ref;
+
 
 
     bool _is_phantom;
