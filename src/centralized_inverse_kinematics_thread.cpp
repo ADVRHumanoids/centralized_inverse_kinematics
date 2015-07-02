@@ -146,6 +146,8 @@ void centralized_inverse_kinematics_thread::custom_release()
 
 void centralized_inverse_kinematics_thread::run()
 {
+    double tic = yarp::os::Time::now();
+
     bool tmp_is_phantom = _is_phantom;
 
     if(ik_problem && qp_solver)
@@ -153,10 +155,14 @@ void centralized_inverse_kinematics_thread::run()
         /** Sense **/
         RobotUtils::ftReadings ft_readings = robot.senseftSensors();
         RobotUtils::ftPtrMap ft_sensors = robot.getftSensors();
+
+        yarp::sig::Vector q_measured(_q.size(), 0.0);
+        robot.sense(q_measured, _dq, _tau);
         if(_is_clik)
-            robot.sense(_q, _dq, _tau);
+            _q = q_measured;
         else
             _q += _dq_ref;
+
 
         /** Update Models **/
         robot.idynutils.updateiDyn3Model(_q,true);
@@ -176,8 +182,9 @@ void centralized_inverse_kinematics_thread::run()
             if(ik_problem->updateWalkingPattern(ik_problem->LFootRef, ik_problem->RFootRef,
                                                 ik_problem->pelvisRef, ik_problem->comRef, stance_foot) &&
                !ik_problem->walking_pattern_finished){
-                ik_problem->log(ik_problem->LFootRef, ik_problem->RFootRef,
-                                ik_problem->pelvisRef, ik_problem->comRef);
+                //ik_problem->log(ik_problem->LFootRef, ik_problem->RFootRef,
+                //                ik_problem->pelvisRef, ik_problem->comRef,
+                //                _q_ref, q_measured);
                 ik_problem->switchSupportFoot(robot.idynutils, stance_foot);
 
                 ik_problem->taskLFoot->setReference(ik_problem->LFootRef);
@@ -226,9 +233,11 @@ void centralized_inverse_kinematics_thread::run()
 //        std::cout<<" ["<<ik_problem->taskRWrist->getActualWrench().toString()<<"]"<<std::endl;
 //        ik_problem->recordWrench();
 
+        _dq_ref = 0.0;
         if(qp_solver->solve(_dq_ref))
         {
             //yarp::sig::Vector q_ref = _q;
+            _q_ref = _q;
             _q_ref += _dq_ref;
             if(tmp_is_phantom){
                 ros::spinOnce();
@@ -250,6 +259,14 @@ void centralized_inverse_kinematics_thread::run()
             ROS_ERROR("ERROR solving stack of tasks!");
         }
     }
+
+    double toc = yarp::os::Time::now();
+    double dt = toc - tic;
+
+    if(dt*1000.0 > get_thread_period())
+        ROS_WARN("Ctrl Loop is %f [ms] while thread rate is %f [ms]", dt*1000.0,
+                 get_thread_period());
+
 }
 
 

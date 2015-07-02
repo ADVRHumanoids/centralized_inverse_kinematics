@@ -44,11 +44,13 @@ public:
     ofstream file_l_footd;
     ofstream file_pelvisd;
     ofstream file_comd;
+    ofstream file_q_ref;
 
     ofstream file_r_foot;
     ofstream file_l_foot;
     ofstream file_pelvis;
     ofstream file_com;
+    ofstream file_q;
 
     bool switchSupportFoot(iDynUtils& robot_model, const int trj_stance_foot);
 
@@ -74,7 +76,8 @@ public: bool walkingPatternGeneration(const double step_time, const int number_o
                               yarp::sig::Matrix& PelvisRef, yarp::sig::Vector& CoMRef,
                               int& stance_foot);
     void log(const yarp::sig::Matrix& LFootRef, const yarp::sig::Matrix& RFootRef,
-             const yarp::sig::Matrix& PelvisRef,const yarp::sig::Vector& CoMRef);
+             const yarp::sig::Matrix& PelvisRef,const yarp::sig::Vector& CoMRef,
+             const yarp::sig::Vector& q_reference, const yarp::sig::Vector& q_measured);
 
     virtual bool update(const yarp::sig::Vector& state)
     {

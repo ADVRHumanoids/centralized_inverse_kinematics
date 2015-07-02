@@ -5,6 +5,8 @@
 
 #define mSecToSec(X) (X*0.001)
 
+#define LAMBDA_GAIN 1.0
+
 using namespace OpenSoT::tasks::velocity;
 using namespace OpenSoT::constraints::velocity;
 using namespace yarp::sig;
@@ -18,21 +20,25 @@ walking_problem::walking_problem(iDynUtils& robot_model):
     file_r_footd.open("positions_ref_r_foot.m");
     file_pelvisd.open("positions_ref_pelvis.m");
     file_comd.open("positions_ref_com.m");
+    file_q_ref.open("q_reference.m");
 
     file_l_foot.open("positions_sot_l_foot.m");
     file_r_foot.open("positions_sot_r_foot.m");
     file_pelvis.open("positions_sot_pelvis.m");
     file_com.open("positions_sot_com.m");
+    file_q.open("q_measured.m");
 
     file_l_footd<<"ref_l_foot = ["<<std::endl;
     file_r_footd<<"ref_r_foot = ["<<std::endl;
     file_pelvisd<<"ref_pelvis = ["<<std::endl;
     file_comd<<"ref_com = ["<<std::endl;
+    file_q_ref<<"q_ref = ["<<std::endl;
 
     file_l_foot<<"sot_l_foot = ["<<std::endl;
     file_r_foot<<"sot_r_foot = ["<<std::endl;
     file_pelvis<<"sot_pelvis = ["<<std::endl;
     file_com<<"sot_com = ["<<std::endl;
+    file_q<<"q = ["<<std::endl;
 
     walking_pattern_finished = true;
     homing_done = false;
@@ -51,23 +57,28 @@ walking_problem::~walking_problem()
     file_r_footd<<"];"<<std::endl;
     file_pelvisd<<"];"<<std::endl;
     file_comd<<"];"<<std::endl;
+    file_q_ref<<"];"<<std::endl;
     file_l_footd.close();
     file_r_footd.close();
     file_pelvisd.close();
     file_comd.close();
+    file_q_ref.close();
 
     file_l_foot<<"];"<<std::endl;
     file_r_foot<<"];"<<std::endl;
     file_pelvis<<"];"<<std::endl;
     file_com<<"];"<<std::endl;
+    file_q<<"];"<<std::endl;
     file_l_foot.close();
     file_r_foot.close();
     file_pelvis.close();
     file_com.close();
+    file_q.close();
 }
 
 void walking_problem::log(const yarp::sig::Matrix& LFootRef, const yarp::sig::Matrix& RFootRef,
-                          const yarp::sig::Matrix &PelvisRef, const yarp::sig::Vector& CoMRef)
+                          const yarp::sig::Matrix &PelvisRef, const yarp::sig::Vector& CoMRef,
+                          const yarp::sig::Vector& q_reference, const yarp::sig::Vector& q_measured)
 {
     KDL::Frame tmp;
     double roll, pitch, yaw;
@@ -86,6 +97,8 @@ void walking_problem::log(const yarp::sig::Matrix& LFootRef, const yarp::sig::Ma
 
     file_comd<<CoMRef[0]<<"  "<<CoMRef[1]<<"  "<<CoMRef[2]<<std::endl;
 
+    file_q_ref<<q_reference.toString()<<std::endl;
+
 
 
 
@@ -102,6 +115,8 @@ void walking_problem::log(const yarp::sig::Matrix& LFootRef, const yarp::sig::Ma
     file_pelvis<<tmp.p[0]<<"  "<<tmp.p[1]<<"  "<<tmp.p[2]<<"  "<<roll<<"  "<<"  "<<pitch<<"  "<<yaw<<std::endl;
 
     file_com<<taskCoM->getActualPosition()[0]<<"  "<<taskCoM->getActualPosition()[1]<<"  "<<taskCoM->getActualPosition()[2]<<std::endl;
+
+    file_q<<q_measured.toString()<<std::endl;
 }
 
 boost::shared_ptr<walking_problem::ik_problem> walking_problem::create_problem(const Vector& state,
@@ -121,18 +136,24 @@ boost::shared_ptr<walking_problem::ik_problem> walking_problem::create_problem(c
         "r_ankle","world"));
     std::cout<<"RFootRef:"<<std::endl;
     cartesian_utils::printHomogeneousTransform(taskRFoot->getReference());
+    taskRFoot->setLambda(LAMBDA_GAIN);
 
     taskLFoot.reset(new Cartesian("cartesian::LFoot",state,robot_model,
         "l_ankle","world"));
     std::cout<<"LFootRef:"<<std::endl;
     cartesian_utils::printHomogeneousTransform(taskLFoot->getReference());
+    taskLFoot->setLambda(LAMBDA_GAIN);
 
     taskPelvis.reset(new Cartesian("cartesian::Waist", state, robot_model,
         "Waist", "world"));
     std::cout<<"PelvisRef:"<<std::endl;
     cartesian_utils::printHomogeneousTransform(taskPelvis->getReference());
+    taskPelvis->setLambda(LAMBDA_GAIN);
 
     taskCoM.reset(new CoM(state, robot_model));
+    yarp::sig::Matrix W(3,3); W.eye(); W(2,2) = 0.0;
+    taskCoM->setWeight(0.5*W);
+
     yarp::sig::Vector com_ref(3,0.0);
     com_ref[0] = 0.0;
     com_ref[1] = 0.0;
@@ -140,26 +161,29 @@ boost::shared_ptr<walking_problem::ik_problem> walking_problem::create_problem(c
     taskCoM->setReference(com_ref);
     std::cout<<"CoMRef:"<<std::endl;
     std::cout<<taskCoM->getReference()[0]<<"  "<<taskCoM->getReference()[1]<<"  "<<taskCoM->getReference()[2]<<std::endl;
+    taskCoM->setLambda(LAMBDA_GAIN);
 
     taskPostural.reset(new Postural(state));
+    taskPostural->setLambda(LAMBDA_GAIN);
     /** Create bounds **/
     JointLimits::ConstraintPtr boundJointLimits(JointLimits::ConstraintPtr(new JointLimits(state,
         robot_model.iDyn3_model.getJointBoundMax(), robot_model.iDyn3_model.getJointBoundMin())));
     VelocityLimits::ConstraintPtr boundsJointVelLimits(VelocityLimits::ConstraintPtr(
         new VelocityLimits(M_PI_2, mSecToSec(dT), state.size())));
 
+
     std::list<OpenSoT::tasks::Aggregated::TaskPtr> taskList;
     taskList.push_back(taskRFoot);
     taskList.push_back(taskLFoot);
     taskList.push_back(taskPelvis);
-    //taskList.push_back(taskCoM);
-    problem->stack_of_tasks.push_back(OpenSoT::tasks::Aggregated::TaskPtr(
-        new OpenSoT::tasks::Aggregated(taskList, state.size())));
-
-    taskList.clear();
     taskList.push_back(taskCoM);
     problem->stack_of_tasks.push_back(OpenSoT::tasks::Aggregated::TaskPtr(
         new OpenSoT::tasks::Aggregated(taskList, state.size())));
+
+//    taskList.clear();
+//    taskList.push_back(taskCoM);
+//    problem->stack_of_tasks.push_back(OpenSoT::tasks::Aggregated::TaskPtr(
+//        new OpenSoT::tasks::Aggregated(taskList, state.size())));
 
     taskList.clear();
     taskList.push_back(taskPostural);
@@ -173,7 +197,7 @@ boost::shared_ptr<walking_problem::ik_problem> walking_problem::create_problem(c
         new OpenSoT::constraints::Aggregated(bounds, state.size()));
 
     /** Set damped leas squares fator **/
-    problem->damped_least_square_eps = 2E2;
+    problem->damped_least_square_eps = 2E10;
 
 return problem;
 }
@@ -191,16 +215,22 @@ boost::shared_ptr<walking_problem::ik_problem> walking_problem::homing_problem(c
     yarp::sig::Matrix RFootReference(4,4); RFootReference = RFootReference.eye();
     RFootReference(0,3) = 0.093; RFootReference(1,3) = -0.14; RFootReference(2,3) = -1.09;
     taskRFoot->setReference(RFootReference);
+    //taskRFoot->setOrientationErrorGain(0.3);
+    taskRFoot->setLambda(LAMBDA_GAIN);
 
     taskLFoot.reset(new Cartesian("cartesian::LFoot_Waist",state,robot_model,
         robot_model.left_leg.end_effector_name,"Waist"));
     yarp::sig::Matrix LFootReference(4,4); LFootReference = LFootReference.eye();
     LFootReference(0,3) = 0.093; LFootReference(1,3) = 0.14; LFootReference(2,3) = -1.09;
     taskLFoot->setReference(LFootReference);
+    //taskLFoot->setOrientationErrorGain(0.3);
+    taskLFoot->setLambda(LAMBDA_GAIN);
 
     Cartesian::Ptr taskTorso = Cartesian::Ptr(new Cartesian("cartesian::Torso_Waist", state, robot_model,
                                                             "torso", "world"));
     std::vector<bool> active_joint_mask = taskTorso->getActiveJointsMask();
+    //taskTorso->setOrientationErrorGain(0.3);
+    taskTorso->setLambda(LAMBDA_GAIN);
     for(unsigned int i = 0; i < 6; ++i)
         active_joint_mask[robot_model.left_leg.joint_numbers[i]] = false;
     taskTorso->setActiveJointsMask(active_joint_mask);
@@ -216,6 +246,7 @@ boost::shared_ptr<walking_problem::ik_problem> walking_problem::homing_problem(c
     q_postural[robot_model.left_arm.joint_numbers[0]] = 5.0*M_PI/180.0;
     q_postural[robot_model.right_arm.joint_numbers[0]] = 5.0*M_PI/180.0;
     taskPostural->setReference(q_postural);
+    taskPostural->setLambda(LAMBDA_GAIN);
 
     /** Create bounds **/
     yarp::sig::Vector joint_bound_max = robot_model.iDyn3_model.getJointBoundMax();
@@ -230,7 +261,7 @@ boost::shared_ptr<walking_problem::ik_problem> walking_problem::homing_problem(c
     JointLimits::ConstraintPtr boundJointLimits(JointLimits::ConstraintPtr(new JointLimits(state,
         joint_bound_max, joint_bound_min)));
     VelocityLimits::ConstraintPtr boundsJointVelLimits(VelocityLimits::ConstraintPtr(
-        new VelocityLimits(0.1, mSecToSec(dT), state.size())));
+        new VelocityLimits(1.0, mSecToSec(dT), state.size())));
 
     std::list<OpenSoT::tasks::Aggregated::TaskPtr> taskList;
     taskList.push_back(subTaskTorso);
@@ -253,7 +284,7 @@ boost::shared_ptr<walking_problem::ik_problem> walking_problem::homing_problem(c
         new OpenSoT::constraints::Aggregated(bounds, state.size()));
 
     /** Set damped leas squares fator **/
-    problem->damped_least_square_eps = 2E2;
+    problem->damped_least_square_eps = 2E10;
 
 return problem;
 }
@@ -337,7 +368,7 @@ bool walking_problem::updateWalkingPattern(yarp::sig::Matrix& LFootRef, yarp::si
     pattern_generator->updateRobotState(zero31, zero31, zero31, zero12, zero3);
 
     Eigen::VectorXd lFootRef(6), rFootRef(6), comRef(3), pelvisRef(6);
-    bool success = pattern_generator->getNewTaskReference(&lFootRef, &rFootRef, &comRef, &pelvisRef);    
+    bool success = pattern_generator->getNewTaskReference(&lFootRef, &rFootRef, &comRef, &pelvisRef);
 
     if(!success){
         walking_pattern_finished = true;
