@@ -8,6 +8,49 @@
 #include <ros/ros.h>
 #include <geometry_msgs/TransformStamped.h>
 
+class logger_proto
+{
+private:
+
+public:
+    enum file_type{
+        matlab
+    };
+
+    logger_proto(const std::string& data_name, const logger_proto::file_type& type)
+    {
+        init(data_name, type);
+    }
+
+    void log(const yarp::sig::Vector& data)
+    {
+        buff.push_back(data);
+    }
+
+    ~logger_proto()
+    {
+        for(unsigned int i = 0; i < buff.size(); ++i)
+            file<<buff[i].toString()<<std::endl;
+        file<<"];"<<std::endl;
+        file.close();
+    }
+
+private:
+    std::vector<yarp::sig::Vector> buff;
+    ofstream file;
+
+    void init(const std::string& data_name, const logger_proto::file_type& type)
+    {
+        std::string f_type = "";
+        if(type == logger_proto::file_type::matlab)
+            f_type = ".m";
+        std::string file_name = data_name+"_log"+f_type;
+        file.open(file_name);
+        if(type == logger_proto::file_type::matlab)
+            file<<data_name<<" = ["<<std::endl;
+    }
+};
+
 class walking_problem: public general_ik_problem {
 
     enum STANCE_FOOT{
@@ -30,6 +73,7 @@ public:
     OpenSoT::tasks::velocity::Cartesian::Ptr taskLFoot;
     OpenSoT::tasks::velocity::Cartesian::Ptr taskPelvis;
     OpenSoT::tasks::velocity::CoM::Ptr taskCoM;
+    OpenSoT::tasks::velocity::Cartesian::Ptr taskRArm;
     OpenSoT::tasks::velocity::Postural::Ptr taskPostural;
 
 
@@ -37,25 +81,26 @@ public:
     yarp::sig::Matrix RFootRef;
     yarp::sig::Matrix pelvisRef;
     yarp::sig::Vector comRef;
+    yarp::sig::Matrix InitialRArmRef;
 
     ~walking_problem();
 
-    ofstream file_r_footd;
-    ofstream file_l_footd;
-    ofstream file_pelvisd;
-    ofstream file_comd;
-    ofstream file_q_ref;
-
-    ofstream file_r_foot;
-    ofstream file_l_foot;
-    ofstream file_pelvis;
-    ofstream file_com;
-    ofstream file_q;
+    logger_proto log_r_foot;
+    logger_proto log_r_foot_d;
+    logger_proto log_l_foot;
+    logger_proto log_l_foot_d;
+    logger_proto log_pelvis;
+    logger_proto log_pelvis_d;
+    logger_proto log_com;
+    logger_proto log_com_d;
+    logger_proto log_q;
+    logger_proto log_q_d;
 
     bool switchSupportFoot(iDynUtils& robot_model, const int trj_stance_foot);
 
     boost::shared_ptr<Clocomotor> pattern_generator;
     MatrixXd footPositions;
+    std::vector<stepInfo> stepsInfo;
 
     bool walking_pattern_finished;
 
@@ -75,9 +120,12 @@ public: bool walkingPatternGeneration(const double step_time, const int number_o
     bool updateWalkingPattern(yarp::sig::Matrix& LFootRef, yarp::sig::Matrix& RFootRef,
                               yarp::sig::Matrix& PelvisRef, yarp::sig::Vector& CoMRef,
                               int& stance_foot);
-    void log(const yarp::sig::Matrix& LFootRef, const yarp::sig::Matrix& RFootRef,
-             const yarp::sig::Matrix& PelvisRef,const yarp::sig::Vector& CoMRef,
-             const yarp::sig::Vector& q_reference, const yarp::sig::Vector& q_measured);
+    void log(const yarp::sig::Matrix& LFoot, const yarp::sig::Matrix& RFoot,
+             const yarp::sig::Matrix& Pelvis,const yarp::sig::Vector& CoM,
+             const yarp::sig::Vector& q,
+             const yarp::sig::Matrix& LFoot_d, const yarp::sig::Matrix& RFoot_d,
+             const yarp::sig::Matrix& Pelvis_d,const yarp::sig::Vector& CoM_d,
+             const yarp::sig::Vector& q_d);
 
     virtual bool update(const yarp::sig::Vector& state)
     {

@@ -40,6 +40,8 @@ private:
     ros::Publisher _joint_command_publisher;
 
     std::mutex _mtx;
+
+    unsigned int _counter;
     
 public:
     //boost::shared_ptr<simple_problem> ik_problem;

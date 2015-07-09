@@ -20,23 +20,13 @@ centralized_inverse_kinematics_thread::centralized_inverse_kinematics_thread(   
     ik_problem(),
     _is_phantom(true),
     _is_clik(false),
-    _n()
+    _n(),
+    _counter(0)
     
 {
-    ROBOT::g_robot_name = get_robot_name();
-    ROBOT::g_urdf_path = get_urdf_path();
-    ROBOT::g_srdf_path = get_srdf_path();
-    ROBOT::g_motorControlLoopTime = 0.005;
-    ROBOT::g_IMUrefreshTime = 0.005;
-
-    yarp::sig::Matrix massMat;
-    robot.idynutils.iDyn3_model.getFloatingBaseMassMatrix(massMat);
-    ROBOT::g_totalMass = massMat(0,0);
-
     // setting floating base under left foot
     robot.idynutils.updateiDyn3Model(_q, true);
     robot.idynutils.setFloatingBaseLink(robot.idynutils.left_leg.end_effector_name);
-
 
     std::string topic_name = module_prefix + "/" + robot.idynutils.getRobotName() + "/joint_command";
     _joint_command_publisher = _n.advertise<sensor_msgs::JointState>(topic_name, 1);
@@ -70,9 +60,12 @@ bool centralized_inverse_kinematics_thread::custom_init()
     //ik_problem = boost::shared_ptr<wb_manip_problem>(new wb_manip_problem());
     ik_problem = boost::shared_ptr<walking_problem>(new walking_problem(robot.idynutils));
 
-    ik_problem->pattern_generator.reset(new Clocomotor(robot.getNumberOfJoints(), ROBOT::g_motorControlLoopTime));
-    ik_problem->walkingPatternGeneration(1.5, 7, 0.28, 0.05);
-
+    std::string saveDataPath = GetEnv("WALKMAN_ROOT") + "/build/drc/walking/data/";
+    yarp::sig::Matrix massMat;
+    robot.idynutils.iDyn3_model.getFloatingBaseMassMatrix(massMat);
+    ik_problem->pattern_generator.reset(new Clocomotor(robot.getNumberOfJoints(), 0.005, 0.005, massMat(0,0), get_robot_name(),
+                                                       get_urdf_path(), get_srdf_path(), saveDataPath));
+    ik_problem->walkingPatternGeneration(1.5, 10, 0.28, 0.05);
 
     boost::shared_ptr<general_ik_problem::ik_problem> problem =
             ik_problem->homing_problem(_q, robot.idynutils, get_thread_period(), get_module_prefix());
@@ -163,6 +156,15 @@ void centralized_inverse_kinematics_thread::run()
         else
             _q += _dq_ref;
 
+        if(ik_problem->reset_solver && ik_problem->homing_done && !ik_problem->walking_pattern_finished){
+            ik_problem->log(ik_problem->taskLFoot->getActualPose(),ik_problem->taskRFoot->getActualPose(),
+                            ik_problem->taskPelvis->getActualPose(), ik_problem->taskCoM->getActualPosition(),
+                            _q,
+                            ik_problem->LFootRef, ik_problem->RFootRef,
+                            ik_problem->pelvisRef, ik_problem->comRef,
+                            _q_ref);
+        }
+
 
         /** Update Models **/
         robot.idynutils.updateiDyn3Model(_q,true);
@@ -180,20 +182,27 @@ void centralized_inverse_kinematics_thread::run()
 
             int stance_foot = 1;
             if(ik_problem->updateWalkingPattern(ik_problem->LFootRef, ik_problem->RFootRef,
-                                                ik_problem->pelvisRef, ik_problem->comRef, stance_foot) &&
-               !ik_problem->walking_pattern_finished){
-                //ik_problem->log(ik_problem->LFootRef, ik_problem->RFootRef,
-                //                ik_problem->pelvisRef, ik_problem->comRef,
-                //                _q_ref, q_measured);
-                ik_problem->switchSupportFoot(robot.idynutils, stance_foot);
+                                                ik_problem->pelvisRef, ik_problem->comRef,
+                                                stance_foot))
+            {
+                if(!ik_problem->walking_pattern_finished)
+                {
+                    ik_problem->switchSupportFoot(robot.idynutils, stance_foot);
 
-                ik_problem->taskLFoot->setReference(ik_problem->LFootRef);
-                ik_problem->taskRFoot->setReference(ik_problem->RFootRef);
-                ik_problem->taskPelvis->setReference(ik_problem->pelvisRef);
-                ik_problem->taskCoM->setReference(ik_problem->comRef);
+                    ik_problem->taskLFoot->setReference(ik_problem->LFootRef);
+                    ik_problem->taskRFoot->setReference(ik_problem->RFootRef);
+                    ik_problem->taskPelvis->setReference(ik_problem->pelvisRef);
+                    ik_problem->taskCoM->setReference(ik_problem->comRef);
+
+                    yarp::sig::Matrix RArmRef = ik_problem->InitialRArmRef;
+                    RArmRef(0,3) = RArmRef(0,3) + 0.1*sin(_counter/100.0);
+                    yarp::sig::Vector dRArmRef(6, 0.0); dRArmRef(0) = (0.1/100.0)*cos(_counter/100.0);
+                    ik_problem->taskRArm->setReference(RArmRef, dRArmRef);
+                    _counter++;
+                }
             }
             else
-                ROS_ERROR_ONCE("WALKING PATTERN GENERATOR RETURN ERROR OR FINISHED!");
+                ROS_WARN_ONCE("WALKING PATTERN GENERATOR RETURN ERROR OR FINISHED!");
         }
 
         for(RobotUtils::ftReadings::iterator it = ft_readings.begin(); it != ft_readings.end(); it++)
