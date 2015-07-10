@@ -81,6 +81,7 @@ public:
     yarp::sig::Matrix RFootRef;
     yarp::sig::Matrix pelvisRef;
     yarp::sig::Vector comRef;
+    yarp::sig::Vector ZMPRef;
     yarp::sig::Matrix InitialRArmRef;
 
     ~walking_problem();
@@ -95,6 +96,7 @@ public:
     logger_proto log_com_d;
     logger_proto log_q;
     logger_proto log_q_d;
+    logger_proto log_zmp_d;
 
     bool switchSupportFoot(iDynUtils& robot_model, const int trj_stance_foot);
 
@@ -119,13 +121,15 @@ public: bool walkingPatternGeneration(const double step_time, const int number_o
                                       const double step_width, const double step_lenght);
     bool updateWalkingPattern(yarp::sig::Matrix& LFootRef, yarp::sig::Matrix& RFootRef,
                               yarp::sig::Matrix& PelvisRef, yarp::sig::Vector& CoMRef,
+                              yarp::sig::Vector& ZMPRef,
                               int& stance_foot);
     void log(const yarp::sig::Matrix& LFoot, const yarp::sig::Matrix& RFoot,
              const yarp::sig::Matrix& Pelvis,const yarp::sig::Vector& CoM,
              const yarp::sig::Vector& q,
              const yarp::sig::Matrix& LFoot_d, const yarp::sig::Matrix& RFoot_d,
              const yarp::sig::Matrix& Pelvis_d,const yarp::sig::Vector& CoM_d,
-             const yarp::sig::Vector& q_d);
+             const yarp::sig::Vector& q_d,
+             const yarp::sig::Vector& zmp_d);
 
     virtual bool update(const yarp::sig::Vector& state)
     {

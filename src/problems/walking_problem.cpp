@@ -5,7 +5,7 @@
 
 #define mSecToSec(X) (X*0.001)
 
-#define LAMBDA_GAIN 1.0
+#define LAMBDA_GAIN .7
 
 using namespace OpenSoT::tasks::velocity;
 using namespace OpenSoT::constraints::velocity;
@@ -46,7 +46,8 @@ walking_problem::walking_problem(iDynUtils& robot_model):
     log_l_foot_d("l_foot_d", logger_proto::file_type::matlab),
     log_r_foot_d("r_foot_d", logger_proto::file_type::matlab),
     log_pelvis_d("pelvis_d", logger_proto::file_type::matlab),
-    log_q_d("q_d", logger_proto::file_type::matlab)
+    log_q_d("q_d", logger_proto::file_type::matlab),
+    log_zmp_d("zmp_d", logger_proto::file_type::matlab)
 {
     walking_pattern_finished = true;
     homing_done = false;
@@ -65,11 +66,12 @@ walking_problem::~walking_problem()
 }
 
 void walking_problem::log(const yarp::sig::Matrix& LFoot, const yarp::sig::Matrix& RFoot,
-         const yarp::sig::Matrix& Pelvis,const yarp::sig::Vector& CoM,
+         const yarp::sig::Matrix& Pelvis, const yarp::sig::Vector& CoM,
          const yarp::sig::Vector& q,
          const yarp::sig::Matrix& LFoot_d, const yarp::sig::Matrix& RFoot_d,
-         const yarp::sig::Matrix& Pelvis_d,const yarp::sig::Vector& CoM_d,
-         const yarp::sig::Vector& q_d)
+         const yarp::sig::Matrix& Pelvis_d, const yarp::sig::Vector& CoM_d,
+         const yarp::sig::Vector& q_d,
+         const Vector &zmp_d)
 {
     log_com.log(CoM);
     log_l_foot.log(LFoot.getCol(3).subVector(0,2));
@@ -81,6 +83,7 @@ void walking_problem::log(const yarp::sig::Matrix& LFoot, const yarp::sig::Matri
     log_r_foot_d.log(RFoot_d.getCol(3).subVector(0,2));
     log_pelvis_d.log(Pelvis_d.getCol(3).subVector(0,2));
     log_q_d.log(q_d);
+    log_zmp_d.log(zmp_d);
 }
 
 //void walking_problem::log(const yarp::sig::Matrix& LFootRef, const yarp::sig::Matrix& RFootRef,
@@ -193,7 +196,7 @@ boost::shared_ptr<walking_problem::ik_problem> walking_problem::create_problem(c
     std::list<OpenSoT::tasks::Aggregated::TaskPtr> taskList;
     taskList.push_back(taskRFoot);
     taskList.push_back(taskLFoot);
-    taskList.push_back(taskPelvis);
+    //taskList.push_back(taskPelvis);
     taskList.push_back(taskCoM);
     problem->stack_of_tasks.push_back(OpenSoT::tasks::Aggregated::TaskPtr(
         new OpenSoT::tasks::Aggregated(taskList, state.size())));
@@ -373,7 +376,7 @@ bool walking_problem::walkingPatternGeneration(const double step_time, const int
 }
 
 bool walking_problem::updateWalkingPattern(yarp::sig::Matrix& LFootRef, yarp::sig::Matrix& RFootRef,
-                                           yarp::sig::Matrix& PelvisRef, yarp::sig::Vector& CoMRef,
+                                           yarp::sig::Matrix& PelvisRef, yarp::sig::Vector& CoMRef, Vector &ZMPRef,
                                            int& stance_foot)
 {
     //For now we fake all the measurements
@@ -385,7 +388,9 @@ bool walking_problem::updateWalkingPattern(yarp::sig::Matrix& LFootRef, yarp::si
     pattern_generator->updateRobotState(zero31, zero31, zero31, zero12, zero3, zero3);
 
     Eigen::VectorXd lFootRef(6), rFootRef(6), comRef(3), pelvisRef(6);
-    bool success = pattern_generator->getNewTaskReference(&lFootRef, &rFootRef, &comRef, &pelvisRef);
+    Eigen::Vector3d zmpRef;
+    bool success = pattern_generator->getNewTaskReference(&lFootRef, &rFootRef, &comRef, &pelvisRef,
+                                                          &zmpRef);
 
     if(!success){
         walking_pattern_finished = true;
@@ -409,6 +414,9 @@ bool walking_problem::updateWalkingPattern(yarp::sig::Matrix& LFootRef, yarp::si
     cartesian_utils::fromKDLFrameToYARPMatrix(r_foot_ref, RFootRef);
     cartesian_utils::fromKDLFrameToYARPMatrix(pelvis_ref, PelvisRef);
     CoMRef[0] = comRef[0]; CoMRef[1] = comRef[1]; CoMRef[2] = comRef[2];
+
+    ZMPRef.resize(3);
+    ZMPRef[0] = zmpRef[0]; ZMPRef[1] = zmpRef[1]; ZMPRef[2] = zmpRef[2];
 
 
     if(ROBOT::g_feetState.getFootState(ROBOT::whichLeg::left) == footState::stance)

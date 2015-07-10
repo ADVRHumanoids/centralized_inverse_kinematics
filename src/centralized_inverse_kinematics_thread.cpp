@@ -118,7 +118,10 @@ bool centralized_inverse_kinematics_thread::custom_init()
             ROS_INFO("SOLVER is running in NORMAL MODE");
 
         if(_is_clik)
-            ROS_WARN("SOLVER is running in CLIK MODE");
+            ROS_INFO("SOLVER is running in CLIK MODE");
+
+        ROS_INFO("PRESS A KEY TO START MODULE");
+        cin.get();
 
         return true;
     }
@@ -160,12 +163,13 @@ void centralized_inverse_kinematics_thread::run()
             _q += _dq_ref;
 
         if(ik_problem->reset_solver && ik_problem->homing_done && !ik_problem->walking_pattern_finished){
-            ik_problem->log(ik_problem->taskLFoot->getActualPose(),ik_problem->taskRFoot->getActualPose(),
-                            ik_problem->taskPelvis->getActualPose(), ik_problem->taskCoM->getActualPosition(),
-                            _q,
-                            ik_problem->LFootRef, ik_problem->RFootRef,
-                            ik_problem->pelvisRef, ik_problem->comRef,
-                            _q_ref);
+//            ik_problem->log(ik_problem->taskLFoot->getActualPose(),ik_problem->taskRFoot->getActualPose(),
+//                            ik_problem->taskPelvis->getActualPose(), ik_problem->taskCoM->getActualPosition(),
+//                            _q,
+//                            ik_problem->LFootRef, ik_problem->RFootRef,
+//                            ik_problem->pelvisRef, ik_problem->comRef,
+//                            _q_ref,
+//                            ik_problem->ZMPRef);
         }
 
 
@@ -186,6 +190,7 @@ void centralized_inverse_kinematics_thread::run()
             int stance_foot = 1;
             if(ik_problem->updateWalkingPattern(ik_problem->LFootRef, ik_problem->RFootRef,
                                                 ik_problem->pelvisRef, ik_problem->comRef,
+                                                ik_problem->ZMPRef,
                                                 stance_foot))
             {
                 if(!ik_problem->walking_pattern_finished)
@@ -198,11 +203,11 @@ void centralized_inverse_kinematics_thread::run()
                     ik_problem->taskCoM->setReference(ik_problem->comRef);
 
                     yarp::sig::Matrix RArmRef = ik_problem->InitialRArmRef;
-                    RArmRef(0,3) = RArmRef(0,3) + 0.1*sin(_counter/100.0);
-                    RArmRef(1,3) = RArmRef(1,3) + 0.1*sin(_counter/100.0);
+                    RArmRef(0,3) = RArmRef(0,3) - 0.4 + 0.4*cos(_counter/100.0);
+                    RArmRef(1,3) = RArmRef(1,3) -0.4 + 0.4*cos(_counter/100.0);
                     yarp::sig::Vector dRArmRef(6, 0.0);
-                    dRArmRef(0) = (0.1/100.0)*cos(_counter/100.0);
-                    dRArmRef(1) = (0.1/100.0)*cos(_counter/100.0);
+                    dRArmRef(0) = -(0.4/100.0)*sin(_counter/100.0);
+                    dRArmRef(1) = -(0.4/100.0)*sin(_counter/100.0);
                     ik_problem->taskRArm->setReference(RArmRef, dRArmRef);
                     _counter++;
                 }
