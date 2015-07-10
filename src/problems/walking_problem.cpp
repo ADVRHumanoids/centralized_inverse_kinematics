@@ -163,7 +163,11 @@ boost::shared_ptr<walking_problem::ik_problem> walking_problem::create_problem(c
 
     taskRArm.reset(new Cartesian("cartesian::RArm", state, robot_model,
                                  "RSoftHand", "Waist"));
-    taskRArm->setLambda(0.1*LAMBDA_GAIN);
+    std::vector<bool> active_joint_mask = taskRArm->getActiveJointsMask();
+    for(unsigned int i = 0; i < 3; ++i)
+        active_joint_mask[robot_model.torso.joint_numbers[i]] = false;
+    taskRArm->setActiveJointsMask(active_joint_mask);
+    taskRArm->setLambda(0.05*LAMBDA_GAIN);
     InitialRArmRef = taskRArm->getActualPose();
     std::cout<<"Initial RArmRef:"<<std::endl;
     cartesian_utils::printHomogeneousTransform(InitialRArmRef);

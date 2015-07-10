@@ -117,6 +117,9 @@ bool centralized_inverse_kinematics_thread::custom_init()
         else
             ROS_INFO("SOLVER is running in NORMAL MODE");
 
+        if(_is_clik)
+            ROS_WARN("SOLVER is running in CLIK MODE");
+
         return true;
     }
     else
@@ -196,7 +199,10 @@ void centralized_inverse_kinematics_thread::run()
 
                     yarp::sig::Matrix RArmRef = ik_problem->InitialRArmRef;
                     RArmRef(0,3) = RArmRef(0,3) + 0.1*sin(_counter/100.0);
-                    yarp::sig::Vector dRArmRef(6, 0.0); dRArmRef(0) = (0.1/100.0)*cos(_counter/100.0);
+                    RArmRef(1,3) = RArmRef(1,3) + 0.1*sin(_counter/100.0);
+                    yarp::sig::Vector dRArmRef(6, 0.0);
+                    dRArmRef(0) = (0.1/100.0)*cos(_counter/100.0);
+                    dRArmRef(1) = (0.1/100.0)*cos(_counter/100.0);
                     ik_problem->taskRArm->setReference(RArmRef, dRArmRef);
                     _counter++;
                 }
