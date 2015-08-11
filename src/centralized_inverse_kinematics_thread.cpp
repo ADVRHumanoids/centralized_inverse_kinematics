@@ -60,11 +60,14 @@ bool centralized_inverse_kinematics_thread::custom_init()
     //ik_problem = boost::shared_ptr<wb_manip_problem>(new wb_manip_problem());
     ik_problem = boost::shared_ptr<walking_problem>(new walking_problem(robot.idynutils));
 
-    std::string saveDataPath = GetEnv("WALKMAN_ROOT") + "/build/drc/walking/data/";
+    std::string saveDataPath = GetEnv("ROBOTOLOGY_ROOT") + "/build/robots/walking/data/";
     yarp::sig::Matrix massMat;
     robot.idynutils.iDyn3_model.getFloatingBaseMassMatrix(massMat);
-    ik_problem->pattern_generator.reset(new Clocomotor(robot.getNumberOfJoints(), 0.005, 0.005, massMat(0,0), get_robot_name(),
-                                                       get_urdf_path(), get_srdf_path(), saveDataPath));
+    std::string path_to_config = GetEnv("ROBOTOLOGY_ROOT") + "/robots/walking/app/conf/inputs";
+    ik_problem->pattern_generator.reset(
+                new Clocomotor(robot.getNumberOfJoints(), 0.005, 0.005, massMat(0,0),
+                               get_robot_name(),get_urdf_path(), get_srdf_path(),
+                               saveDataPath, path_to_config));
     ik_problem->walkingPatternGeneration(1.5, 10, 0.28, 0.05);
 
     boost::shared_ptr<general_ik_problem::ik_problem> problem =
@@ -108,7 +111,10 @@ bool centralized_inverse_kinematics_thread::custom_init()
             _joint_command_publisher.publish(joint_msg);
         }
         else
+        {
             robot.move(_q_ref);
+            std::cout<<"q_ref: "<<_q_ref.toString()<<std::endl;
+        }
 
         ROS_INFO("SoT is succesfully intialized!");
 
