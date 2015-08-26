@@ -51,7 +51,7 @@ bool centralized_inverse_kinematics_thread::custom_init()
     //ik_problem = boost::shared_ptr<simple_problem>(new simple_problem());
     //ik_problem = boost::shared_ptr<interaction_problem>(new interaction_problem());
     //ik_problem = boost::shared_ptr<wb_manip_problem>(new wb_manip_problem());
-    ik_problem = boost::shared_ptr<walking_problem>(new walking_problem(robot.idynutils));
+    ik_problem = boost::shared_ptr<IK_PROBLEM_TYPE_CONST>(new IK_PROBLEM_TYPE_CONST(robot.idynutils));
 
     std::string saveDataPath = GetEnv("ROBOTOLOGY_ROOT") + "/build/robots/walking/data/";
     yarp::sig::Matrix massMat;
