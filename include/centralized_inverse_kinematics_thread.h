@@ -32,12 +32,7 @@ private:
     yarp::sig::Vector _q_ref;
 
 
-
-    bool _is_phantom;
     bool _is_clik;
-
-    ros::NodeHandle _n;
-    ros::Publisher _joint_command_publisher;
 
     std::mutex _mtx;
 

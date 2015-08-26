@@ -2,7 +2,6 @@
 
 #include "centralized_inverse_kinematics_thread.h"
 #include "centralized_inverse_kinematics_constants.h"
-#include <ros/ros.h>
 #include <sensor_msgs/JointState.h>
 #include <OpenSoT/tasks/velocity/Interaction.h>
 
@@ -18,25 +17,19 @@ centralized_inverse_kinematics_thread::centralized_inverse_kinematics_thread(   
     _dq_ref( robot.idynutils.iDyn3_model.getNrOfDOFs(), 0.0 ),
     _q_ref( robot.idynutils.iDyn3_model.getNrOfDOFs(), 0.0 ),
     ik_problem(),
-    _is_phantom(true),
     _is_clik(false),
-    _n(),
     _counter(0)
     
 {
     // setting floating base under left foot
     robot.idynutils.updateiDyn3Model(_q, true);
     robot.idynutils.setFloatingBaseLink(robot.idynutils.left_leg.end_effector_name);
-
-    std::string topic_name = module_prefix + "/" + robot.idynutils.getRobotName() + "/joint_command";
-    _joint_command_publisher = _n.advertise<sensor_msgs::JointState>(topic_name, 1);
 }
 
 bool centralized_inverse_kinematics_thread::custom_init()
 {    
     // param helper link param for all the chains and the max_vel param
     std::shared_ptr<paramHelp::ParamHelperServer> ph = get_param_helper();
-    ph->linkParam( IS_PHANTOM_ID, &_is_phantom );
     ph->linkParam( IS_CLIK_ID, &_is_clik );
 
     robot.sense(_q, _dq, _tau);
@@ -73,17 +66,6 @@ bool centralized_inverse_kinematics_thread::custom_init()
     boost::shared_ptr<general_ik_problem::ik_problem> problem =
             ik_problem->homing_problem(_q, robot.idynutils, get_thread_period(), get_module_prefix());
 
-//    KDL::Frame ee_in_base_link = robot.idynutils.iDyn3_model.getPositionKDL(robot.idynutils.iDyn3_model.getLinkIndex("r_wrist"));
-//    yarp::sig::Vector desired_wrench(6, 0.0); KDL::Wrench desired_wrench_KDL;
-//    desired_wrench = ik_problem->taskRWrist->getReferenceWrench();
-//    cartesian_utils::fromYarpVectortoKDLWrench(desired_wrench, desired_wrench_KDL);
-//    desired_wrench_KDL = ee_in_base_link.Inverse()*desired_wrench_KDL;
-//    desired_wrench_KDL.force[1] = -8.0;
-//    //desired_wrench_KDL.force[0] = 10.0; desired_wrench_KDL.force[1] = 5.0; desired_wrench_KDL.force[2] = -10.0;
-//    desired_wrench_KDL = ee_in_base_link*desired_wrench_KDL;
-//    cartesian_utils::fromKDLWrenchtoYarpVector(desired_wrench_KDL, desired_wrench);
-//    ik_problem->taskRWrist->setReferenceWrench(desired_wrench);
-
     try{ qp_solver.reset(new OpenSoT::solvers::QPOases_sot(problem->stack_of_tasks,
                                                            problem->bounds,
                                                            problem->damped_least_square_eps));}
@@ -96,32 +78,12 @@ bool centralized_inverse_kinematics_thread::custom_init()
     if(qp_solver->solve(_dq_ref))
     {
         robot.setPositionDirectMode();
-        //yarp::sig::Vector q_ref = _q;
         _q_ref += _dq_ref;
-        if(_is_phantom){
-            ros::spinOnce();
+        robot.move(_q_ref);
 
-            sensor_msgs::JointState joint_msg;
-            for(unsigned int i = 0; i < _q_ref.size(); ++i){
-                joint_msg.position.push_back(_q_ref[i]);
-                joint_msg.effort.push_back(0.0);
-                joint_msg.velocity.push_back(_dq_ref[i]/(get_thread_period()*0.001));
-                joint_msg.name.push_back(robot.getJointNames()[i]);}
-            joint_msg.header.stamp = ros::Time::now();
-            _joint_command_publisher.publish(joint_msg);
-        }
-        else
-        {
-            robot.move(_q_ref);
-            std::cout<<"q_ref: "<<_q_ref.toString()<<std::endl;
-        }
 
         ROS_INFO("SoT is succesfully intialized!");
 
-        if(_is_phantom)
-            ROS_WARN("SOLVER is running in PHANTOM MODE");
-        else
-            ROS_INFO("SOLVER is running in NORMAL MODE");
 
         if(_is_clik)
             ROS_INFO("SOLVER is running in CLIK MODE");
@@ -133,7 +95,7 @@ bool centralized_inverse_kinematics_thread::custom_init()
     }
     else
         ROS_ERROR("ERRORS occurred during SoT initialization!");
-        return false;
+    return false;
 }
 
 void centralized_inverse_kinematics_thread::custom_release()
@@ -153,8 +115,6 @@ void centralized_inverse_kinematics_thread::run()
 {
     double tic = yarp::os::Time::now();
 
-    bool tmp_is_phantom = _is_phantom;
-
     if(ik_problem && qp_solver)
     {
         /** Sense **/
@@ -167,17 +127,6 @@ void centralized_inverse_kinematics_thread::run()
             _q = q_measured;
         else
             _q += _dq_ref;
-
-        if(ik_problem->reset_solver && ik_problem->homing_done && !ik_problem->walking_pattern_finished){
-//            ik_problem->log(ik_problem->taskLFoot->getActualPose(),ik_problem->taskRFoot->getActualPose(),
-//                            ik_problem->taskPelvis->getActualPose(), ik_problem->taskCoM->getActualPosition(),
-//                            _q,
-//                            ik_problem->LFootRef, ik_problem->RFootRef,
-//                            ik_problem->pelvisRef, ik_problem->comRef,
-//                            _q_ref,
-//                            ik_problem->ZMPRef);
-        }
-
 
         /** Update Models **/
         robot.idynutils.updateiDyn3Model(_q,true);
@@ -255,30 +204,12 @@ void centralized_inverse_kinematics_thread::run()
             ik_problem->reset_solver = true;           
         }
 
-//        std::cout<<"Actual Wrench in "<<ik_problem->taskRWrist->getBaseLink();
-//        std::cout<<" ["<<ik_problem->taskRWrist->getActualWrench().toString()<<"]"<<std::endl;
-//        ik_problem->recordWrench();
-
         _dq_ref = 0.0;
         if(qp_solver->solve(_dq_ref))
         {
-            //yarp::sig::Vector q_ref = _q;
             _q_ref = _q;
             _q_ref += _dq_ref;
-            if(tmp_is_phantom){
-                ros::spinOnce();
-
-                sensor_msgs::JointState joint_msg;
-                for(unsigned int i = 0; i < _q_ref.size(); ++i){
-                    joint_msg.position.push_back(_q_ref[i]);
-                    joint_msg.effort.push_back(0.0);
-                    joint_msg.velocity.push_back(_dq_ref[i]/(get_thread_period()*0.001));
-                    joint_msg.name.push_back(robot.getJointNames()[i]);}
-                joint_msg.header.stamp = ros::Time::now();
-                _joint_command_publisher.publish(joint_msg);
-            }
-            else
-                robot.move(_q_ref);
+            robot.move(_q_ref);
         }
         else{
             _dq_ref = 0.0;

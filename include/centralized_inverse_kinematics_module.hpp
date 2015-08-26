@@ -39,13 +39,7 @@ public:
     {
         std::vector<paramHelp::ParamProxyInterface *> custom_params;
 
-        // insert is_phantom
-        custom_params.push_back( new paramHelp::ParamProxyBasic<bool>(    "is_phantom",
-                                                                            IS_PHANTOM_ID,
-                                                                            IS_PHANTOM_SIZE,
-                                                                            paramHelp::PARAM_IN_OUT,
-                                                                            NULL,
-                                                                            "IK send data to phantom" ) );
+
         custom_params.push_back( new paramHelp::ParamProxyBasic<bool>(    "is_clik",
                                                                             IS_CLIK_ID,
                                                                             IS_CLIK_SIZE,
@@ -61,22 +55,12 @@ public:
         // get param helper
         std::shared_ptr< paramHelp::ParamHelperServer > ph = get_param_helper();
         // register all the callbacks
-        ph->registerParamValueChangedCallback( IS_PHANTOM_ID, this );
         ph->registerParamValueChangedCallback( IS_CLIK_ID, this );
     }
 
     virtual void custom_parameterUpdated(const paramHelp::ParamProxyInterface *pd)
     {
         centralized_inverse_kinematics_thread* thread = get_thread();
-        if( pd->id == IS_PHANTOM_ID )
-        {
-            if( thread )
-            {
-                ROS_INFO("IS_PHANTOM WAS CHANGED!");
-                thread->stop();
-                thread->start();
-            }
-        }
         if(pd->id == IS_CLIK_ID)
         {
             if( thread )
