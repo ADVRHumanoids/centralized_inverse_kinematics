@@ -31,6 +31,8 @@ private:
 
     yarp::sig::Vector _q_ref;
 
+    std::vector<iDynUtils::ft_measure> _ft_measurements;
+
 
     bool _is_clik;
 

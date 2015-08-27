@@ -16,6 +16,7 @@ centralized_inverse_kinematics_thread::centralized_inverse_kinematics_thread(   
     _tau( robot.idynutils.iDyn3_model.getNrOfDOFs(), 0.0 ),
     _dq_ref( robot.idynutils.iDyn3_model.getNrOfDOFs(), 0.0 ),
     _q_ref( robot.idynutils.iDyn3_model.getNrOfDOFs(), 0.0 ),
+    _ft_measurements(),
     ik_problem(),
     _is_clik(false),
     _counter(0)
@@ -24,6 +25,19 @@ centralized_inverse_kinematics_thread::centralized_inverse_kinematics_thread(   
     // setting floating base under left foot
     robot.idynutils.updateiDyn3Model(_q, true);
     robot.idynutils.setFloatingBaseLink(robot.idynutils.left_leg.end_effector_name);
+
+    RobotUtils::ftPtrMap ft_sensors = robot.getftSensors();
+    for(RobotUtils::ftPtrMap::iterator it = ft_sensors.begin();
+        it != ft_sensors.end(); it++)
+    {
+        iDynUtils::ft_measure ft_measurement;
+        ft_measurement.first = it->second->getReferenceFrame();
+        yarp::sig::Vector dummy_measure(6 ,0.0);
+        ft_measurement.second = dummy_measure;
+
+        _ft_measurements.push_back(ft_measurement);
+    }
+
 }
 
 bool centralized_inverse_kinematics_thread::custom_init()
@@ -34,23 +48,13 @@ bool centralized_inverse_kinematics_thread::custom_init()
 
     robot.sense(_q, _dq, _tau);
     _q_ref = _q;
-    robot.idynutils.updateiDyn3Model(_q, true);
 
     RobotUtils::ftReadings ft_readings = robot.senseftSensors();
-    RobotUtils::ftPtrMap ft_sensors = robot.getftSensors();
-    for(RobotUtils::ftReadings::iterator it = ft_readings.begin(); it != ft_readings.end(); it++)
-    {
-        moveit::core::LinkModel* ft_link = robot.idynutils.moveit_robot_model->getLinkModel(
-                    ft_sensors[it->first]->getReferenceFrame());
-        std::string ft_joint_name = ft_link->getParentJointModel()->getName();
-        int ft_index = robot.idynutils.iDyn3_model.getFTSensorIndex(ft_joint_name);
+    for(unsigned int i = 0; i < _ft_measurements.size(); ++i)
+        _ft_measurements[i].second = -1.0*ft_readings[_ft_measurements[i].first];
 
-        robot.idynutils.iDyn3_model.setSensorMeasurement(ft_index, -1.0*it->second);
-    }
+    robot.idynutils.updateiDyn3Model(_q, _ft_measurements, true);
 
-    //ik_problem = boost::shared_ptr<simple_problem>(new simple_problem());
-    //ik_problem = boost::shared_ptr<interaction_problem>(new interaction_problem());
-    //ik_problem = boost::shared_ptr<wb_manip_problem>(new wb_manip_problem());
     ik_problem = boost::shared_ptr<IK_PROBLEM_TYPE_CONST>(new IK_PROBLEM_TYPE_CONST(robot.idynutils));
 
     std::string saveDataPath = GetEnv("ROBOTOLOGY_ROOT") + "/build/robots/walking/data/";
@@ -119,7 +123,6 @@ void centralized_inverse_kinematics_thread::run()
     {
         /** Sense **/
         RobotUtils::ftReadings ft_readings = robot.senseftSensors();
-        RobotUtils::ftPtrMap ft_sensors = robot.getftSensors();
 
         yarp::sig::Vector q_measured(_q.size(), 0.0);
         robot.sense(q_measured, _dq, _tau);
@@ -128,8 +131,15 @@ void centralized_inverse_kinematics_thread::run()
         else
             _q += _dq_ref;
 
+        for(unsigned int i = 0; i < _ft_measurements.size(); ++i){
+            double sign = 1.0;
+            if(_ft_measurements[i].first == "l_arm_ft" || _ft_measurements[i].first == "r_arm_ft")
+                sign = -1.0; //We want the force that the robot is doing on the environment, for this we use -1 in the arms!
+            _ft_measurements[i].second = sign*ft_readings[_ft_measurements[i].first];
+        }
+
         /** Update Models **/
-        robot.idynutils.updateiDyn3Model(_q,true);
+        robot.idynutils.updateiDyn3Model(_q, _ft_measurements, true);
 
 
         if(ik_problem->reset_solver && ik_problem->homing_done){
@@ -169,22 +179,6 @@ void centralized_inverse_kinematics_thread::run()
             }
             else
                 ROS_WARN_ONCE("WALKING PATTERN GENERATOR RETURN ERROR OR FINISHED!");
-        }
-
-        for(RobotUtils::ftReadings::iterator it = ft_readings.begin(); it != ft_readings.end(); it++)
-        {
-            moveit::core::LinkModel* ft_link = robot.idynutils.moveit_robot_model->getLinkModel(
-                        ft_sensors[it->first]->getReferenceFrame());
-            std::string ft_joint_name = ft_link->getParentJointModel()->getName();
-            int ft_index = robot.idynutils.iDyn3_model.getFTSensorIndex(ft_joint_name);
-
-            int sign = 1.0;
-            if(ft_joint_name == "l_arm_ft" || ft_joint_name == "r_arm_ft"){
-                //We want the force that the robot is doing on the environment, for this we use -1 in the arms!
-                sign = -1.0;
-            }
-
-            robot.idynutils.iDyn3_model.setSensorMeasurement(ft_index, sign*it->second);
         }
 
         /** Update OpenSoTServer **/
