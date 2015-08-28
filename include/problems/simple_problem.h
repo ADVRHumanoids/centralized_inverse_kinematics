@@ -6,7 +6,7 @@
 
 class simple_problem: public general_ik_problem {
 public:
-    simple_problem();
+    simple_problem(iDynUtils& robot_model, std::string urdf_path, std::string srdf_path);
     
     virtual boost::shared_ptr<ik_problem> create_problem(const yarp::sig::Vector& state,
                         iDynUtils& robot_model,const double dT,

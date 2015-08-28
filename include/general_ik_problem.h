@@ -23,7 +23,10 @@ public:
 
     boost::shared_ptr<ik_problem> problem;
 
-    general_ik_problem()
+    general_ik_problem(iDynUtils &robot_model, std::string& urdf_path, std::string& srdf_path):
+        _robot_model(robot_model),
+        _urdf_path(urdf_path),
+        _srdf_path(srdf_path)
     {
         problem = boost::shared_ptr<ik_problem>(new ik_problem);
     }
@@ -39,5 +42,21 @@ public:
             problem->stack_of_tasks[i]->update(state);
         problem->bounds->update(state);
     }
+protected:
+    /**
+     * @brief _robot_model is an internal reference to an external robot_model that will not be used to
+     * create tasks.
+     */
+    iDynUtils& _robot_model;
+
+    /**
+     * @brief urdf_path is the path to the used urdf
+     */
+    std::string _urdf_path;
+
+    /**
+     * @brief srdf_path is the path to the used srdf
+     */
+    std::string _srdf_path;
 };
 #endif

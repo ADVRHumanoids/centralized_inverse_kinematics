@@ -55,17 +55,10 @@ bool centralized_inverse_kinematics_thread::custom_init()
 
     robot.idynutils.updateiDyn3Model(_q, _ft_measurements, true);
 
-    ik_problem = boost::shared_ptr<IK_PROBLEM_TYPE_CONST>(new IK_PROBLEM_TYPE_CONST(robot.idynutils));
-
-    std::string saveDataPath = GetEnv("ROBOTOLOGY_ROOT") + "/build/robots/walking/data/";
-    yarp::sig::Matrix massMat;
-    robot.idynutils.iDyn3_model.getFloatingBaseMassMatrix(massMat);
-    std::string path_to_config = GetEnv("ROBOTOLOGY_ROOT") + "/robots/walking/app/conf/inputs";
-    ik_problem->pattern_generator.reset(
-                new Clocomotor(robot.getNumberOfJoints(), 0.005, 0.005, massMat(0,0),
-                               get_robot_name(),get_urdf_path(), get_srdf_path(),
-                               saveDataPath, path_to_config));
-    ik_problem->walkingPatternGeneration(1.5, 10, 0.28, 0.05);
+    std::string urdf_path = get_urdf_path();
+    std::string srdf_path = get_srdf_path();
+    ik_problem = boost::shared_ptr<IK_PROBLEM_TYPE_CONST>(
+                new IK_PROBLEM_TYPE_CONST(robot.idynutils, urdf_path, srdf_path));
 
     boost::shared_ptr<general_ik_problem::ik_problem> problem =
             ik_problem->homing_problem(_q, robot.idynutils, get_thread_period(), get_module_prefix());
@@ -132,10 +125,8 @@ void centralized_inverse_kinematics_thread::run()
             _q += _dq_ref;
 
         for(unsigned int i = 0; i < _ft_measurements.size(); ++i){
-            double sign = 1.0;
-            if(_ft_measurements[i].first == "l_arm_ft" || _ft_measurements[i].first == "r_arm_ft")
-                sign = -1.0; //We want the force that the robot is doing on the environment, for this we use -1 in the arms!
-            _ft_measurements[i].second = sign*ft_readings[_ft_measurements[i].first];
+            _ft_measurements[i].second = -1.0*ft_readings[_ft_measurements[i].first];
+
         }
 
         /** Update Models **/
@@ -167,14 +158,14 @@ void centralized_inverse_kinematics_thread::run()
                     ik_problem->taskPelvis->setReference(ik_problem->pelvisRef);
                     ik_problem->taskCoM->setReference(ik_problem->comRef);
 
-                    yarp::sig::Matrix RArmRef = ik_problem->InitialRArmRef;
-                    RArmRef(0,3) = RArmRef(0,3) - 0.4 + 0.4*cos(_counter/100.0);
-                    RArmRef(1,3) = RArmRef(1,3) -0.4 + 0.4*cos(_counter/100.0);
-                    yarp::sig::Vector dRArmRef(6, 0.0);
-                    dRArmRef(0) = -(0.4/100.0)*sin(_counter/100.0);
-                    dRArmRef(1) = -(0.4/100.0)*sin(_counter/100.0);
-                    ik_problem->taskRArm->setReference(RArmRef, dRArmRef);
-                    _counter++;
+//                    yarp::sig::Matrix RArmRef = ik_problem->InitialRArmRef;
+//                    RArmRef(0,3) = RArmRef(0,3) - 0.4 + 0.4*cos(_counter/100.0);
+//                    RArmRef(1,3) = RArmRef(1,3) -0.4 + 0.4*cos(_counter/100.0);
+//                    yarp::sig::Vector dRArmRef(6, 0.0);
+//                    dRArmRef(0) = -(0.4/100.0)*sin(_counter/100.0);
+//                    dRArmRef(1) = -(0.4/100.0)*sin(_counter/100.0);
+//                    ik_problem->taskRArm->setReference(RArmRef, dRArmRef);
+//                    _counter++;
                 }
             }
             else

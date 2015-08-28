@@ -33,10 +33,9 @@ CsharedVar<Eigen::Vector3d> g_footToAnkleShift(temporary_footToAnkleShift);
 }
 
 
-walking_problem::walking_problem(iDynUtils& robot_model):
-    general_ik_problem(),
+walking_problem::walking_problem(iDynUtils& robot_model, std::string &urdf_path, std::string &srdf_path):
+    general_ik_problem(robot_model, urdf_path, srdf_path),
     n(),
-    _robot_model(robot_model),
     log_com("com", logger_proto::file_type::matlab),
     log_l_foot("l_foot", logger_proto::file_type::matlab),
     log_r_foot("r_foot", logger_proto::file_type::matlab),
@@ -58,6 +57,20 @@ walking_problem::walking_problem(iDynUtils& robot_model):
     stance_foot = STANCE_FOOT::LEFT_FOOT;
 
     new_world_pub = n.advertise<geometry_msgs::TransformStamped>("/anchor_to_world_pose", 1000);
+
+
+    /** FROM HERE WE INITIALIZE CLOCOMOTOR **/
+    std::string saveDataPath = GetEnv("ROBOTOLOGY_ROOT") + "/build/robots/walking/data/";
+    yarp::sig::Matrix massMat;
+    robot_model.iDyn3_model.getFloatingBaseMassMatrix(massMat);
+    std::string path_to_config = GetEnv("ROBOTOLOGY_ROOT") + "/robots/walking/app/conf/inputs";
+    this->pattern_generator.reset(
+                new Clocomotor(robot_model.iDyn3_model.getNrOfDOFs(), 0.005, 0.005, massMat(0,0),
+                               robot_model.getRobotName(),
+                               _urdf_path, _srdf_path,
+                               saveDataPath, path_to_config));
+    walkingPatternGeneration(1.5, 10, 0.28, 0.05);
+
 }
 
 walking_problem::~walking_problem()
@@ -167,7 +180,7 @@ boost::shared_ptr<walking_problem::ik_problem> walking_problem::create_problem(c
     taskRArm.reset(new Cartesian("cartesian::RArm", state, robot_model,
                                  "RSoftHand", "Waist"));
     std::vector<bool> active_joint_mask = taskRArm->getActiveJointsMask();
-    for(unsigned int i = 0; i < 3; ++i)
+    for(unsigned int i = 0; i < robot_model.torso.getNrOfDOFs(); ++i)
         active_joint_mask[robot_model.torso.joint_numbers[i]] = false;
     taskRArm->setActiveJointsMask(active_joint_mask);
     taskRArm->setLambda(0.05*LAMBDA_GAIN);
@@ -249,7 +262,7 @@ boost::shared_ptr<walking_problem::ik_problem> walking_problem::homing_problem(c
                                                             "torso", "world"));
     std::vector<bool> active_joint_mask = taskTorso->getActiveJointsMask();
     taskTorso->setLambda(LAMBDA_GAIN);
-    for(unsigned int i = 0; i < 6; ++i)
+    for(unsigned int i = 0; i < robot_model.left_leg.getNrOfDOFs(); ++i)
         active_joint_mask[robot_model.left_leg.joint_numbers[i]] = false;
     taskTorso->setActiveJointsMask(active_joint_mask);
     OpenSoT::SubTask::Ptr subTaskTorso = OpenSoT::SubTask::Ptr(
@@ -257,19 +270,19 @@ boost::shared_ptr<walking_problem::ik_problem> walking_problem::homing_problem(c
 
     taskPostural.reset(new Postural(state));
     yarp::sig::Vector q_postural(state.size(), 0.0);
-    q_postural[robot_model.left_leg.joint_numbers[3]] = 10.0*M_PI/180.0;
-    q_postural[robot_model.right_leg.joint_numbers[3]] = 10.0*M_PI/180.0;
-    q_postural[robot_model.left_arm.joint_numbers[3]] = -20.0*M_PI/180.0;
-    q_postural[robot_model.right_arm.joint_numbers[3]] = -20.0*M_PI/180.0;
-    q_postural[robot_model.left_arm.joint_numbers[0]] = 5.0*M_PI/180.0;
-    q_postural[robot_model.right_arm.joint_numbers[0]] = 5.0*M_PI/180.0;
+//    q_postural[robot_model.left_leg.joint_numbers[3]] = 10.0*M_PI/180.0;
+//    q_postural[robot_model.right_leg.joint_numbers[3]] = 10.0*M_PI/180.0;
+//    q_postural[robot_model.left_arm.joint_numbers[3]] = -20.0*M_PI/180.0;
+//    q_postural[robot_model.right_arm.joint_numbers[3]] = -20.0*M_PI/180.0;
+//    q_postural[robot_model.left_arm.joint_numbers[0]] = 5.0*M_PI/180.0;
+//    q_postural[robot_model.right_arm.joint_numbers[0]] = 5.0*M_PI/180.0;
     taskPostural->setReference(q_postural);
     taskPostural->setLambda(LAMBDA_GAIN);
 
     /** Create bounds **/
     yarp::sig::Vector joint_bound_max = robot_model.iDyn3_model.getJointBoundMax();
     yarp::sig::Vector joint_bound_min = robot_model.iDyn3_model.getJointBoundMin();
-    for(unsigned int i = 0; i < 6; ++i)
+    for(unsigned int i = 0; i < robot_model.left_leg.getNrOfDOFs(); ++i)
     {
         joint_bound_max[robot_model.left_leg.joint_numbers[i]] = M_PI;
         joint_bound_min[robot_model.left_leg.joint_numbers[i]] = -M_PI;

@@ -59,7 +59,7 @@ class walking_problem: public general_ik_problem {
     };
 
 public:
-    walking_problem(iDynUtils &robot_model);
+    walking_problem(iDynUtils &robot_model, std::string& urdf_path, std::string& srdf_path);
 
     boost::shared_ptr<ik_problem> homing_problem(const yarp::sig::Vector& state,
                         iDynUtils& robot_model,const double dT,
@@ -116,7 +116,6 @@ private: void generateFootSteps(const int number_of_steps, const double step_wid
     int stance_foot;
     ros::NodeHandle n;
     ros::Publisher new_world_pub;
-    iDynUtils& _robot_model;
 public: bool walkingPatternGeneration(const double step_time, const int number_of_steps,
                                       const double step_width, const double step_lenght);
     bool updateWalkingPattern(yarp::sig::Matrix& LFootRef, yarp::sig::Matrix& RFootRef,

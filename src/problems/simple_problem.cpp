@@ -8,8 +8,8 @@ using namespace OpenSoT::tasks::velocity;
 using namespace OpenSoT::constraints::velocity;
 using namespace yarp::sig;
 
-simple_problem::simple_problem():
-    general_ik_problem()
+simple_problem::simple_problem(iDynUtils &robot_model, string urdf_path, string srdf_path):
+    general_ik_problem(robot_model, urdf_path, srdf_path)
 {}
 
 boost::shared_ptr<simple_problem::ik_problem> simple_problem::create_problem(const Vector& state,

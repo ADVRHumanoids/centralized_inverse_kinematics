@@ -9,8 +9,8 @@ using namespace OpenSoT::constraints::velocity;
 using namespace OpenSoT::interfaces::yarp::tasks;
 using namespace yarp::sig;
 
-wb_manip_problem::wb_manip_problem():
-    general_ik_problem()
+wb_manip_problem::wb_manip_problem(iDynUtils &robot_model, string urdf_path, string srdf_path):
+    general_ik_problem(robot_model, urdf_path, srdf_path)
 {}
 
 wb_manip_problem::~wb_manip_problem()

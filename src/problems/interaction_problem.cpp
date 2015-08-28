@@ -9,8 +9,8 @@ using namespace OpenSoT::tasks::velocity;
 using namespace OpenSoT::constraints::velocity;
 using namespace yarp::sig;
 
-interaction_problem::interaction_problem():
-    general_ik_problem()
+interaction_problem::interaction_problem(iDynUtils &robot_model, string &urdf_path, string &srdf_path):
+    general_ik_problem(robot_model, urdf_path, srdf_path)
 {
     file.open("wrench.m");
     file<<"W = ["<<std::endl;
