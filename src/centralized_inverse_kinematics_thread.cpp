@@ -65,6 +65,7 @@ bool centralized_inverse_kinematics_thread::custom_init()
 
     try{ qp_solver.reset(new OpenSoT::solvers::QPOases_sot(problem->stack_of_tasks,
                                                            problem->bounds,
+                                                           problem->global_constraints,
                                                            problem->damped_least_square_eps));}
     catch (const char* s){
         ROS_ERROR(s);
@@ -124,10 +125,9 @@ void centralized_inverse_kinematics_thread::run()
         else
             _q += _dq_ref;
 
-        for(unsigned int i = 0; i < _ft_measurements.size(); ++i){
+        for(unsigned int i = 0; i < _ft_measurements.size(); ++i)
             _ft_measurements[i].second = -1.0*ft_readings[_ft_measurements[i].first];
 
-        }
 
         /** Update Models **/
         robot.idynutils.updateiDyn3Model(_q, _ft_measurements, true);
@@ -180,12 +180,13 @@ void centralized_inverse_kinematics_thread::run()
             qp_solver.reset();
 
             ROS_WARN("RESET PROBLEM AND SOLVER");
-            boost::shared_ptr<general_ik_problem::ik_problem> walking_problem =
+            boost::shared_ptr<general_ik_problem::ik_problem> main_problem =
                     ik_problem->create_problem(_q, robot.idynutils, get_thread_period(), get_module_prefix());
 
-            qp_solver.reset(new OpenSoT::solvers::QPOases_sot(walking_problem->stack_of_tasks,
-                                                              walking_problem->bounds,
-                                                              walking_problem->damped_least_square_eps));
+            qp_solver.reset(new OpenSoT::solvers::QPOases_sot(main_problem->stack_of_tasks,
+                                                              main_problem->bounds,
+                                                              main_problem->global_constraints,
+                                                              main_problem->damped_least_square_eps));
             ik_problem->reset_solver = true;           
         }
 

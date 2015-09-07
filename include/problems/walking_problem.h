@@ -136,7 +136,10 @@ public: bool walkingPatternGeneration(const double step_time, const int number_o
 
         for(unsigned int i = 0; i < problem->stack_of_tasks.size(); ++i)
             problem->stack_of_tasks[i]->update(state);
-        problem->bounds->update(state);
+        if(problem->bounds)
+            problem->bounds->update(state);
+        if(problem->global_constraints)
+            problem->global_constraints->update(state);
 
         if(!homing_done)
         {
@@ -146,8 +149,13 @@ public: bool walkingPatternGeneration(const double step_time, const int number_o
                 ROS_WARN("HOMING DONE!");
                 homing_done = true;
 
+                yarp::sig::Matrix ankle_T_sole = _robot_model.iDyn3_model.getPosition(
+                            _robot_model.iDyn3_model.getLinkIndex("l_ankle"),
+                            _robot_model.iDyn3_model.getLinkIndex("l_sole"));
+
                 KDL::Frame l_ankle_T_World; l_ankle_T_World.Identity();
-                l_ankle_T_World.p[0] = 0.0; l_ankle_T_World.p[1] = -0.14; l_ankle_T_World.p[2] = -0.143;
+                //l_ankle_T_World.p[0] = 0.0; l_ankle_T_World.p[1] = -0.14; l_ankle_T_World.p[2] = -0.143;
+                l_ankle_T_World.p[0] = 0.0; l_ankle_T_World.p[1] = -LFootRef(1,3); l_ankle_T_World.p[2] = ankle_T_sole(2,3);
                 _robot_model.switchAnchor("l_ankle");
                 _robot_model.setAnchor_T_World(l_ankle_T_World);
                 _robot_model.updateiDyn3Model(state,true);

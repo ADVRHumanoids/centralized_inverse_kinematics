@@ -26,7 +26,12 @@ CsharedVar<std::string> g_saveDataPath;
 CsharedVar<Eigen::VectorXd> g_upBodConfigInCKinAndDYn;
 CsharedVar<Eigen::VectorXd> g_upperBodyHomingPos_const;
 
-CsharedVar<double> g_ankle_height(0.1435);
+/**
+ * @brief g_ankle_height: this data should be taken from URDF!
+ *  Bigman = 0.1435
+ *  Hydra = 0.1
+ */
+CsharedVar<double> g_ankle_height(0.1);
 CsharedVar<double> g_ground_to_FT_sensor(0.0365);
 Eigen::Vector3d temporary_footToAnkleShift(0.0,0.0,g_ankle_height.Get());
 CsharedVar<Eigen::Vector3d> g_footToAnkleShift(temporary_footToAnkleShift);
@@ -36,6 +41,11 @@ CsharedVar<Eigen::Vector3d> g_footToAnkleShift(temporary_footToAnkleShift);
 walking_problem::walking_problem(iDynUtils& robot_model, std::string &urdf_path, std::string &srdf_path):
     general_ik_problem(robot_model, urdf_path, srdf_path),
     n(),
+    LFootRef(4,4),
+    RFootRef(4,4),
+    pelvisRef(4,4),
+    comRef(3,0.0),
+    ZMPRef(3,0.0),
     log_com("com", logger_proto::file_type::matlab),
     log_l_foot("l_foot", logger_proto::file_type::matlab),
     log_r_foot("r_foot", logger_proto::file_type::matlab),
@@ -48,6 +58,10 @@ walking_problem::walking_problem(iDynUtils& robot_model, std::string &urdf_path,
     log_q_d("q_d", logger_proto::file_type::matlab),
     log_zmp_d("zmp_d", logger_proto::file_type::matlab)
 {
+    LFootRef.eye();
+    RFootRef.eye();
+    pelvisRef.eye();
+
     walking_pattern_finished = true;
     homing_done = false;
     reset_solver = false;
@@ -64,13 +78,19 @@ walking_problem::walking_problem(iDynUtils& robot_model, std::string &urdf_path,
     yarp::sig::Matrix massMat;
     robot_model.iDyn3_model.getFloatingBaseMassMatrix(massMat);
     std::string path_to_config = GetEnv("ROBOTOLOGY_ROOT") + "/robots/walking/app/conf/inputs";
+
     this->pattern_generator.reset(
                 new Clocomotor(robot_model.iDyn3_model.getNrOfDOFs(), 0.005, 0.005, massMat(0,0),
                                robot_model.getRobotName(),
                                _urdf_path, _srdf_path,
                                saveDataPath, path_to_config));
+
     walkingPatternGeneration(1.5, 10, 0.28, 0.05);
 
+    int foo = 1;
+    //Here is needed two times...
+    updateWalkingPattern(LFootRef, RFootRef, pelvisRef, comRef, ZMPRef, foo);
+    updateWalkingPattern(LFootRef, RFootRef, pelvisRef, comRef, ZMPRef, foo);
 }
 
 walking_problem::~walking_problem()
@@ -98,49 +118,6 @@ void walking_problem::log(const yarp::sig::Matrix& LFoot, const yarp::sig::Matri
     log_q_d.log(q_d);
     log_zmp_d.log(zmp_d);
 }
-
-//void walking_problem::log(const yarp::sig::Matrix& LFootRef, const yarp::sig::Matrix& RFootRef,
-//                          const yarp::sig::Matrix &PelvisRef, const yarp::sig::Vector& CoMRef,
-//                          const yarp::sig::Vector& q_reference, const yarp::sig::Vector& q_measured)
-//{
-//    KDL::Frame tmp;
-//    double roll, pitch, yaw;
-
-//    cartesian_utils::fromYARPMatrixtoKDLFrame(LFootRef, tmp);
-//    tmp.M.GetRPY(roll, pitch, yaw);
-//    file_l_footd<<tmp.p[0]<<"  "<<tmp.p[1]<<"  "<<tmp.p[2]<<"  "<<roll<<"  "<<"  "<<pitch<<"  "<<yaw<<std::endl;
-
-//    cartesian_utils::fromYARPMatrixtoKDLFrame(RFootRef, tmp);
-//    tmp.M.GetRPY(roll, pitch, yaw);
-//    file_r_footd<<tmp.p[0]<<"  "<<tmp.p[1]<<"  "<<tmp.p[2]<<"  "<<roll<<"  "<<"  "<<pitch<<"  "<<yaw<<std::endl;
-
-//    cartesian_utils::fromYARPMatrixtoKDLFrame(PelvisRef, tmp);
-//    tmp.M.GetRPY(roll, pitch, yaw);
-//    file_pelvisd<<tmp.p[0]<<"  "<<tmp.p[1]<<"  "<<tmp.p[2]<<"  "<<roll<<"  "<<"  "<<pitch<<"  "<<yaw<<std::endl;
-
-//    file_comd<<CoMRef[0]<<"  "<<CoMRef[1]<<"  "<<CoMRef[2]<<std::endl;
-
-//    file_q_ref<<q_reference.toString()<<std::endl;
-
-
-
-
-//    cartesian_utils::fromYARPMatrixtoKDLFrame(taskLFoot->getActualPose(), tmp);
-//    tmp.M.GetRPY(roll, pitch, yaw);
-//    file_l_foot<<tmp.p[0]<<"  "<<tmp.p[1]<<"  "<<tmp.p[2]<<"  "<<roll<<"  "<<"  "<<pitch<<"  "<<yaw<<std::endl;
-
-//    cartesian_utils::fromYARPMatrixtoKDLFrame(taskRFoot->getActualPose(), tmp);
-//    tmp.M.GetRPY(roll, pitch, yaw);
-//    file_r_foot<<tmp.p[0]<<"  "<<tmp.p[1]<<"  "<<tmp.p[2]<<"  "<<roll<<"  "<<"  "<<pitch<<"  "<<yaw<<std::endl;
-
-//    cartesian_utils::fromYARPMatrixtoKDLFrame(taskPelvis->getActualPose(), tmp);
-//    tmp.M.GetRPY(roll, pitch, yaw);
-//    file_pelvis<<tmp.p[0]<<"  "<<tmp.p[1]<<"  "<<tmp.p[2]<<"  "<<roll<<"  "<<"  "<<pitch<<"  "<<yaw<<std::endl;
-
-//    file_com<<taskCoM->getActualPosition()[0]<<"  "<<taskCoM->getActualPosition()[1]<<"  "<<taskCoM->getActualPosition()[2]<<std::endl;
-
-//    file_q<<q_measured.toString()<<std::endl;
-//}
 
 boost::shared_ptr<walking_problem::ik_problem> walking_problem::create_problem(const Vector& state,
                                                                              iDynUtils& robot_model, const double dT,
@@ -189,9 +166,9 @@ boost::shared_ptr<walking_problem::ik_problem> walking_problem::create_problem(c
     cartesian_utils::printHomogeneousTransform(InitialRArmRef);
 
     yarp::sig::Vector com_ref(3,0.0);
-    com_ref[0] = 0.0;
-    com_ref[1] = 0.0;
-    com_ref[2] = 1.13;
+    com_ref[0] = comRef(0);
+    com_ref[1] = comRef(1);
+    com_ref[2] = comRef(2); //1.13
     taskCoM->setReference(com_ref);
     std::cout<<"CoMRef:"<<std::endl;
     std::cout<<taskCoM->getReference()[0]<<"  "<<taskCoM->getReference()[1]<<"  "<<taskCoM->getReference()[2]<<std::endl;
@@ -243,20 +220,37 @@ boost::shared_ptr<walking_problem::ik_problem> walking_problem::homing_problem(c
     /** CH **/
     ConvexHull::Ptr ch = ConvexHull::Ptr(new ConvexHull(state, robot_model, 0.06));
 
+    yarp::sig::Matrix rsole_T_world = robot_model.iDyn3_model.getPosition(
+                robot_model.iDyn3_model.getLinkIndex("r_sole"), true);
+    yarp::sig::Matrix waist_T_rsole = yarp::math::pinv(rsole_T_world*pelvisRef);
+
     /** Create Tasks **/
     taskRFoot.reset(new Cartesian("cartesian::RFoot_Waist",state,robot_model,
         robot_model.right_leg.end_effector_name,"Waist"));
     yarp::sig::Matrix RFootReference(4,4); RFootReference = RFootReference.eye();
-    RFootReference(0,3) = 0.093; RFootReference(1,3) = -0.14; RFootReference(2,3) = -1.09;
+    RFootReference(0,3) = waist_T_rsole(0,3);
+    RFootReference(1,3) = RFootRef(1,3);
+    RFootReference(2,3) = waist_T_rsole(2,3);
+    //RFootReference(0,3) = 0.093; RFootReference(1,3) = -0.14; RFootReference(2,3) = -1.09;
     taskRFoot->setReference(RFootReference);
     taskRFoot->setLambda(LAMBDA_GAIN);
+    std::cout<<"Homing RFoot: "<<std::endl; cartesian_utils::printHomogeneousTransform(RFootReference);
+
+
+    yarp::sig::Matrix lsole_T_world = robot_model.iDyn3_model.getPosition(
+                robot_model.iDyn3_model.getLinkIndex("l_sole"), true);
+    yarp::sig::Matrix waist_T_lsole = yarp::math::pinv(lsole_T_world*pelvisRef);
 
     taskLFoot.reset(new Cartesian("cartesian::LFoot_Waist",state,robot_model,
         robot_model.left_leg.end_effector_name,"Waist"));
     yarp::sig::Matrix LFootReference(4,4); LFootReference = LFootReference.eye();
-    LFootReference(0,3) = 0.093; LFootReference(1,3) = 0.14; LFootReference(2,3) = -1.09;
+    LFootReference(0,3) = waist_T_lsole(0,3);
+    LFootReference(1,3) = LFootRef(1,3);
+    LFootReference(2,3) = waist_T_lsole(2,3);
+    //LFootReference(0,3) = 0.093; LFootReference(1,3) = 0.14; LFootReference(2,3) = -1.09;
     taskLFoot->setReference(LFootReference);
     taskLFoot->setLambda(LAMBDA_GAIN);
+    std::cout<<"Homing LFoot: "<<std::endl; cartesian_utils::printHomogeneousTransform(LFootReference);
 
     Cartesian::Ptr taskTorso = Cartesian::Ptr(new Cartesian("cartesian::Torso_Waist", state, robot_model,
                                                             "torso", "world"));
@@ -270,8 +264,8 @@ boost::shared_ptr<walking_problem::ik_problem> walking_problem::homing_problem(c
 
     taskPostural.reset(new Postural(state));
     yarp::sig::Vector q_postural(state.size(), 0.0);
-//    q_postural[robot_model.left_leg.joint_numbers[3]] = 10.0*M_PI/180.0;
-//    q_postural[robot_model.right_leg.joint_numbers[3]] = 10.0*M_PI/180.0;
+    q_postural[robot_model.left_leg.joint_numbers[3]] = 10.0*M_PI/180.0;
+    q_postural[robot_model.right_leg.joint_numbers[3]] = 10.0*M_PI/180.0;
 //    q_postural[robot_model.left_arm.joint_numbers[3]] = -20.0*M_PI/180.0;
 //    q_postural[robot_model.right_arm.joint_numbers[3]] = -20.0*M_PI/180.0;
 //    q_postural[robot_model.left_arm.joint_numbers[0]] = 5.0*M_PI/180.0;
