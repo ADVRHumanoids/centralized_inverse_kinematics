@@ -130,16 +130,9 @@ public: bool walkingPatternGeneration(const double step_time, const int number_o
              const yarp::sig::Vector& q_d,
              const yarp::sig::Vector& zmp_d);
 
-    virtual bool update(const yarp::sig::Vector& state)
+    virtual bool run(const yarp::sig::Vector& state)
     {
         ros::spinOnce();
-
-        for(unsigned int i = 0; i < problem->stack_of_tasks.size(); ++i)
-            problem->stack_of_tasks[i]->update(state);
-        if(problem->bounds)
-            problem->bounds->update(state);
-        if(problem->global_constraints)
-            problem->global_constraints->update(state);
 
         if(!homing_done)
         {
@@ -175,6 +168,7 @@ public: bool walkingPatternGeneration(const double step_time, const int number_o
                 ROS_WARN("SET NEW WORLD POSE!");
             }
         }
+        return true;
     }
 };
 

@@ -20,6 +20,8 @@ public:
 
     boost::shared_ptr<OpenSoT::interfaces::yarp::tasks::YCartesian> YTorsoCartesian;
 
+    virtual bool run(const Vector &state){ return true;}
+
 };
 
 #endif //__SIMPLE_PROBLEM__

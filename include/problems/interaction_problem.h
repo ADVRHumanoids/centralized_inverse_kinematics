@@ -16,6 +16,8 @@ public:
 
     ofstream file;
 
+    virtual bool run(const Vector &state){ return true;}
+
     void recordWrench();
 
     ~interaction_problem();

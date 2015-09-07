@@ -31,7 +31,7 @@ CsharedVar<Eigen::VectorXd> g_upperBodyHomingPos_const;
  *  Bigman = 0.1435
  *  Hydra = 0.1
  */
-CsharedVar<double> g_ankle_height(0.1);
+CsharedVar<double> g_ankle_height(0.1435);
 CsharedVar<double> g_ground_to_FT_sensor(0.0365);
 Eigen::Vector3d temporary_footToAnkleShift(0.0,0.0,g_ankle_height.Get());
 CsharedVar<Eigen::Vector3d> g_footToAnkleShift(temporary_footToAnkleShift);

@@ -23,6 +23,7 @@ public:
 
     ofstream file;
 
+    virtual bool run(const Vector &state){ return true;}
 
     ~wb_manip_problem();
 

@@ -60,7 +60,7 @@ public:
                                                          const double dT,
                                                          const std::string& name_space) = 0;
 
-    virtual bool update(const yarp::sig::Vector& state)
+    virtual bool update_ik_problem(const yarp::sig::Vector& state)
     {
         for(unsigned int i = 0; i < problem->stack_of_tasks.size(); ++i)
             problem->stack_of_tasks[i]->update(state);
@@ -68,6 +68,18 @@ public:
             problem->bounds->update(state);
         if(problem->global_constraints)
             problem->global_constraints->update(state);
+
+        return true;
+    }
+
+    virtual bool run(const yarp::sig::Vector& state) = 0;
+
+    virtual bool update(const yarp::sig::Vector& state)
+    {
+        bool a = update_ik_problem(state);
+        bool b = run(state);
+
+        return a && b;
     }
 protected:
     /**
