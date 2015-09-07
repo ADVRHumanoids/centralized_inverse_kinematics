@@ -63,38 +63,41 @@ bool centralized_inverse_kinematics_thread::custom_init()
     boost::shared_ptr<general_ik_problem::ik_problem> problem =
             ik_problem->homing_problem(_q, robot.idynutils, get_thread_period(), get_module_prefix());
 
-    try{ qp_solver.reset(new OpenSoT::solvers::QPOases_sot(problem->stack_of_tasks,
-                                                           problem->bounds,
-                                                           problem->global_constraints,
-                                                           problem->damped_least_square_eps));}
-    catch (const char* s){
-        ROS_ERROR(s);
-        ROS_ERROR("The Module will be stopped.");
-        custom_release();
-        return false;}
+    if(problem){
+        try{ qp_solver.reset(new OpenSoT::solvers::QPOases_sot(problem->stack_of_tasks,
+                                                               problem->bounds,
+                                                               problem->global_constraints,
+                                                               problem->damped_least_square_eps));}
+        catch (const char* s){
+            ROS_ERROR(s);
+            ROS_ERROR("The Module will be stopped.");
+            custom_release();
+            return false;}
 
-    if(qp_solver->solve(_dq_ref))
-    {
-        robot.setPositionDirectMode();
-        _q_ref += _dq_ref;
-        robot.move(_q_ref);
-
-
-        ROS_INFO("SoT is succesfully intialized!");
+        if(qp_solver->solve(_dq_ref))
+        {
+            robot.setPositionDirectMode();
+            _q_ref += _dq_ref;
+            robot.move(_q_ref);
 
 
-        if(_is_clik)
-            ROS_INFO("SOLVER is running in CLIK MODE");
-
-        ROS_INFO("PRESS A KEY TO START MODULE");
-        cin.get();
-
-        return true;
+            ROS_INFO("SoT is succesfully intialized!");
+        }
+        else{
+            ROS_ERROR("ERRORS occurred during SoT initialization!");
+            return false;}
     }
     else
-        ROS_ERROR("ERRORS occurred during SoT initialization!");
-    return false;
-}
+        ROS_INFO("No homing provided, skipping");
+
+    if(_is_clik)
+        ROS_INFO("SOLVER is running in CLIK MODE");
+
+    ROS_INFO("PRESS A KEY TO START MODULE");
+        cin.get();
+
+    return true;
+    }
 
 void centralized_inverse_kinematics_thread::custom_release()
 {
