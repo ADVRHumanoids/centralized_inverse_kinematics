@@ -60,6 +60,11 @@ public:
                                                          const double dT,
                                                          const std::string& name_space) = 0;
 
+    /**
+     * @brief update_ik_problem updates all the internal object of the ik_problem
+     * @param state actual joint values
+     * @return true
+     */
     virtual bool update_ik_problem(const yarp::sig::Vector& state)
     {
         for(unsigned int i = 0; i < problem->stack_of_tasks.size(); ++i)
@@ -72,8 +77,18 @@ public:
         return true;
     }
 
+    /**
+     * @brief run contains user code to handle object of the derived class
+     * @param state actual joint values
+     * @return true or false
+     */
     virtual bool run(const yarp::sig::Vector& state) = 0;
 
+    /**
+     * @brief update both update_ik_problem() and run()
+     * @param state actual joint values
+     * @return true or false
+     */
     virtual bool update(const yarp::sig::Vector& state)
     {
         bool a = update_ik_problem(state);
