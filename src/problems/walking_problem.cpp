@@ -5,7 +5,8 @@
 
 #define mSecToSec(X) (X*0.001)
 
-#define LAMBDA_GAIN .7
+#define LAMBDA_GAIN 1.0//.7
+#define COM_GAIN 1.0//0.5
 
 using namespace OpenSoT::tasks::velocity;
 using namespace OpenSoT::constraints::velocity;
@@ -31,7 +32,7 @@ CsharedVar<Eigen::VectorXd> g_upperBodyHomingPos_const;
  *  Bigman = 0.1435
  *  Hydra = 0.1
  */
-CsharedVar<double> g_ankle_height(0.1435);
+CsharedVar<double> g_ankle_height(0.1);
 CsharedVar<double> g_ground_to_FT_sensor(0.0365);
 Eigen::Vector3d temporary_footToAnkleShift(0.0,0.0,g_ankle_height.Get());
 CsharedVar<Eigen::Vector3d> g_footToAnkleShift(temporary_footToAnkleShift);
@@ -85,7 +86,14 @@ walking_problem::walking_problem(iDynUtils& robot_model, std::string &urdf_path,
                                _urdf_path, _srdf_path,
                                saveDataPath, path_to_config));
 
-    walkingPatternGeneration(1.5, 10, 0.28, 0.05);
+    /**
+     * @brief walkingPatternGeneration
+     *
+     * Parameters:
+     * WALK-MAN = 1.5, 10, 0.28, 0.05
+     * HYDRA = 1.0, 10, 0.25, 0.05
+     */
+    walkingPatternGeneration(1.0, 10, 0.25, 0.05);
 
     int foo = 1;
     //Here is needed two times...
@@ -152,7 +160,7 @@ boost::shared_ptr<walking_problem::ik_problem> walking_problem::create_problem(c
 
     taskCoM.reset(new CoM(state, robot_model));
     yarp::sig::Matrix W(3,3); W.eye(); W(2,2) = 0.0;
-    taskCoM->setWeight(0.5*W);
+    taskCoM->setWeight(COM_GAIN*W);
 
     taskRArm.reset(new Cartesian("cartesian::RArm", state, robot_model,
                                  "RSoftHand", "Waist"));
@@ -264,6 +272,7 @@ boost::shared_ptr<walking_problem::ik_problem> walking_problem::homing_problem(c
 
     taskPostural.reset(new Postural(state));
     yarp::sig::Vector q_postural(state.size(), 0.0);
+    q_postural = state;
     q_postural[robot_model.left_leg.joint_numbers[3]] = 10.0*M_PI/180.0;
     q_postural[robot_model.right_leg.joint_numbers[3]] = 10.0*M_PI/180.0;
 //    q_postural[robot_model.left_arm.joint_numbers[3]] = -20.0*M_PI/180.0;
