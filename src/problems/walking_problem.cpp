@@ -32,7 +32,7 @@ CsharedVar<Eigen::VectorXd> g_upperBodyHomingPos_const;
  *  Bigman = 0.1435
  *  Hydra = 0.1
  */
-CsharedVar<double> g_ankle_height(0.1);
+CsharedVar<double> g_ankle_height(0.1435);
 CsharedVar<double> g_ground_to_FT_sensor(0.0365);
 Eigen::Vector3d temporary_footToAnkleShift(0.0,0.0,g_ankle_height.Get());
 CsharedVar<Eigen::Vector3d> g_footToAnkleShift(temporary_footToAnkleShift);
@@ -57,7 +57,8 @@ walking_problem::walking_problem(iDynUtils& robot_model, std::string &urdf_path,
     log_r_foot_d("r_foot_d", logger_proto::file_type::matlab),
     log_pelvis_d("pelvis_d", logger_proto::file_type::matlab),
     log_q_d("q_d", logger_proto::file_type::matlab),
-    log_zmp_d("zmp_d", logger_proto::file_type::matlab)
+    log_zmp_d("zmp_d", logger_proto::file_type::matlab),
+    controlPitch()
 {
     LFootRef.eye();
     RFootRef.eye();
@@ -93,12 +94,14 @@ walking_problem::walking_problem(iDynUtils& robot_model, std::string &urdf_path,
      * WALK-MAN = 1.5, 10, 0.28, 0.05
      * HYDRA = 1.0, 10, 0.25, 0.05
      */
-    walkingPatternGeneration(1.0, 10, 0.25, 0.05);
+    walkingPatternGeneration(1.5, 10, 0.28, 0.05);
 
     int foo = 1;
     //Here is needed two times...
     updateWalkingPattern(LFootRef, RFootRef, pelvisRef, comRef, ZMPRef, foo);
     updateWalkingPattern(LFootRef, RFootRef, pelvisRef, comRef, ZMPRef, foo);
+
+
 }
 
 walking_problem::~walking_problem()
@@ -135,6 +138,7 @@ boost::shared_ptr<walking_problem::ik_problem> walking_problem::create_problem(c
     taskLFoot.reset();
     taskPelvis.reset();
     taskPostural.reset();
+    taskTorso.reset();
 
     problem->stack_of_tasks.clear();
     problem->bounds.reset();
@@ -158,13 +162,26 @@ boost::shared_ptr<walking_problem::ik_problem> walking_problem::create_problem(c
     cartesian_utils::printHomogeneousTransform(taskPelvis->getReference());
     taskPelvis->setLambda(LAMBDA_GAIN);
 
+    taskTorso.reset(new Cartesian("cartesian::Torso", state, robot_model,
+        "torso", "world"));
+    std::cout<<"TorsoRef:"<<std::endl;
+    cartesian_utils::printHomogeneousTransform(taskTorso->getReference());
+    taskTorso->setLambda(LAMBDA_GAIN);
+    yarp::sig::Matrix WTorso(6,6); WTorso.eye();
+    WTorso(0,0) = 0.0; WTorso(1,1) = 0.0; WTorso(2,2) = 0.0;
+    taskTorso->setWeight(WTorso);
+    std::vector<bool> active_joint_mask = taskTorso->getActiveJointsMask();
+    for(unsigned int i = 0; i < robot_model.left_leg.getNrOfDOFs(); ++i)
+        active_joint_mask[robot_model.left_leg.joint_numbers[i]] = false;
+    taskTorso->setActiveJointsMask(active_joint_mask);
+
     taskCoM.reset(new CoM(state, robot_model));
     yarp::sig::Matrix W(3,3); W.eye(); W(2,2) = 0.0;
     taskCoM->setWeight(COM_GAIN*W);
 
     taskRArm.reset(new Cartesian("cartesian::RArm", state, robot_model,
                                  "RSoftHand", "Waist"));
-    std::vector<bool> active_joint_mask = taskRArm->getActiveJointsMask();
+    active_joint_mask = taskRArm->getActiveJointsMask();
     for(unsigned int i = 0; i < robot_model.torso.getNrOfDOFs(); ++i)
         active_joint_mask[robot_model.torso.joint_numbers[i]] = false;
     taskRArm->setActiveJointsMask(active_joint_mask);
@@ -195,7 +212,8 @@ boost::shared_ptr<walking_problem::ik_problem> walking_problem::create_problem(c
     taskList.push_back(taskRFoot);
     taskList.push_back(taskLFoot);
     //taskList.push_back(taskPelvis);
-    taskList.push_back(taskCoM);
+    //taskList.push_back(taskCoM);
+    taskList.push_back(taskTorso);
     problem->stack_of_tasks.push_back(OpenSoT::tasks::Aggregated::TaskPtr(
         new OpenSoT::tasks::Aggregated(taskList, state.size())));
 

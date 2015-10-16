@@ -74,7 +74,10 @@ ADD_EXECUTABLE(${PROJECT_NAME} src/centralized_inverse_kinematics_main.cpp
 src/problems/interaction_problem.cpp
 src/problems/wb_manip_problem.cpp
 src/problems/walking_problem.cpp
-			          )
+src/comStabilizer.cpp
+src/FilterHClass.cpp
+src/integralControl.cpp
+src/MatrixVector.cpp		          )
 
 TARGET_LINK_LIBRARIES(${PROJECT_NAME} ${walking_LIBRARIES}
                                       ${iDynTree_LIBRARIES}

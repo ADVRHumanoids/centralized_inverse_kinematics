@@ -33,6 +33,8 @@ private:
 
     std::vector<iDynUtils::ft_measure> _ft_measurements;
 
+    yarp_IMU_interface *imuIFace;
+
 
     bool _is_clik;
 

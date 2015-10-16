@@ -7,6 +7,8 @@
 #include <fstream>
 #include <ros/ros.h>
 #include <geometry_msgs/TransformStamped.h>
+#include <IntegralControl.h>
+#include <idynutils/yarp_IMU_interface.h>
 
 class logger_proto
 {
@@ -75,6 +77,7 @@ public:
     OpenSoT::tasks::velocity::CoM::Ptr taskCoM;
     OpenSoT::tasks::velocity::Cartesian::Ptr taskRArm;
     OpenSoT::tasks::velocity::Postural::Ptr taskPostural;
+    OpenSoT::tasks::velocity::Cartesian::Ptr taskTorso;
 
 
     yarp::sig::Matrix LFootRef;
@@ -111,6 +114,9 @@ public:
     bool reset_solver;
 
     bool start_walking_pattern;
+
+    IntegralControl controlPitch;
+
 
 private: void generateFootSteps(const int number_of_steps, const double step_width, const double step_lenght);
     int stance_foot;
