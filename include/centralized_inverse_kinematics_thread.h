@@ -41,6 +41,8 @@ private:
     std::mutex _mtx;
 
     unsigned int _counter;
+
+    iDynUtils _robot_real;
     
 public:
     //boost::shared_ptr<simple_problem> ik_problem;

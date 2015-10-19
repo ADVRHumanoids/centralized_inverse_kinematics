@@ -8,20 +8,25 @@
  */
 fullStabilizer::fullStabilizer()
 {
+    /* tunning parameter, should be consistent with invG*/
+    this->Nu=1;
+    this->N2=30;
+    this->alfa=0;
+    this->controlFlag=0;
+    constraints=1;
     std::string FILEG="invGfull.txt";
     std::string FILEH="invHfull.txt";
     std::string FILEF="Ffull.txt";
 
-
     this->m=90;
     this->g=9.81;
-    this->z_c=0.6;
+    this->z_c=1;
     this->sampletime=0.005;
     /*LQR GAINS DEFINITION*/
 //    Qc=100;
 //    R =Qc*1e-7;
-    this->LQRgains[1]=1135;
-    this->LQRgains[0]=3037;
+    this->LQRgains[1]=210;
+    this->LQRgains[0]=313;
     /*SS description in discrate form*/
     double Inertia=1/(m*pow(z_c,2));
     this->A<<1,this->sampletime,
@@ -41,31 +46,27 @@ fullStabilizer::fullStabilizer()
     this->Bmpc.resize(this->sizeB);
     this->Cmpc.resize(this->sizeC);
     this->Dmpc.resize(this->sizeD);
-    /*TF IN discrete time for a second order integrator*/
+    /*TF IN discrete time for a second order integrator with I*/
     this->Ampc<<1, -2, 1;
-    this->Bmpc<<0,0.00003855,-0.0000377;
+    this->Bmpc<<0,0.00004022 ,-0.00003960;
     //this->Bmpc<<0,pow(sampletime,2)/2,pow(sampletime,2)/2;
     /*LOW PASS FILTER (
      *
      * [H,I]=butter(1,[0.001 0.9])
      *
      * )*/
-    //this->Cmpc<<0.0716,0,-0.0716;
-    //this->Dmpc<<1.0000,-1.8563   , 0.8568;
-    this->Cmpc<<0.1246,0,-0.1246;
-    this->Dmpc<<1.0000,-1.7421 ,0.7508;
-    //this->Cmpc<<0,1;
-    //this->Dmpc<<1,-1;
-    /* tunning parameter, should be consistent with invG*/
-    this->Nu=7;
-    this->N2=10;
-    this->alfa=0;
-    this->controlFlag==0;
+    double k=0.1;
+//    this->Cmpc<< 0.0929 , 0 ,-0.0929;
+//    this->Dmpc<<1.0000,-1.7828,0.8141;
+    this->Cmpc<< 0.4208 ,0 ,-0.4208;
+    this->Dmpc<<1,-0.8416,0.1584;
+
+
     /*Initializations*/
-    this->X.resize(N2+sizeA+1)	;
-    this->U.resize(N2+sizeB+1)	;
-    this->NF.resize(N2+sizeC+1)	;
-    this->N.resize(N2+sizeD+1)	;
+    this->X.resize(N2+sizeA+1)    ;
+    this->U.resize(N2+sizeB+1)    ;
+    this->NF.resize(N2+sizeC+1)    ;
+    this->N.resize(N2+sizeD+1)    ;
 
     this->invG.resize(Nu,N2);
     this->invH.resize(Nu,Nu);
@@ -73,17 +74,17 @@ fullStabilizer::fullStabilizer()
 
     this->importGmatrix(FILEG,FILEH,FILEF);
 
-    this->ConstraintB.resize(2*Nu+2*Nu+2*N2);
-    this->ConstraintA.resize(2*Nu+2*Nu+2*N2,Nu);
+    this->ConstraintB.resize(2*N2);
+    this->ConstraintA.resize(2*N2,Nu);
 
-    this->ConstraintA.block(0,0,Nu,Nu)=MatrixXd::Identity(Nu,Nu);
-    this->ConstraintA.block(Nu,0,Nu,Nu)=-MatrixXd::Identity(Nu,Nu);
+//    this->ConstraintA.block(0,0,Nu,Nu)=MatrixXd::Identity(Nu,Nu);
+//    this->ConstraintA.block(Nu,0,Nu,Nu)=-MatrixXd::Identity(Nu,Nu);
 
-    this->ConstraintA.block(2*Nu,0,Nu,Nu)=MatrixXd::Identity(Nu,Nu);
-    this->ConstraintA.block(3*Nu,0,Nu,Nu)=-MatrixXd::Identity(Nu,Nu);
+//    this->ConstraintA.block(2*Nu,0,Nu,Nu)=MatrixXd::Identity(Nu,Nu);
+//    this->ConstraintA.block(3*Nu,0,Nu,Nu)=-MatrixXd::Identity(Nu,Nu);
 
-    this->ConstraintA.block(4*Nu,0,N2,Nu)=this->F.transpose();
-    this->ConstraintA.block(4*Nu+N2,0,N2,Nu)=-this->F.transpose();
+    this->ConstraintA.block(0,0,N2,Nu)=this->F.transpose();
+    this->ConstraintA.block(N2,0,N2,Nu)=-this->F.transpose();
 
 
     this->freq=20;
@@ -134,10 +135,10 @@ fullStabilizer::fullStabilizer(double LQRgains[2],double sampleTime,std::string 
     this->N2=20;
     this->alfa=0;
     /*Initializations*/
-    this->X.resize(N2+sizeA+1)	;
-    this->U.resize(N2+sizeB+1)	;
-    this->NF.resize(N2+sizeC+1)	;
-    this->N.resize(N2+sizeD+1)	;
+    this->X.resize(N2+sizeA+1)    ;
+    this->U.resize(N2+sizeB+1)    ;
+    this->NF.resize(N2+sizeC+1)    ;
+    this->N.resize(N2+sizeD+1)    ;
 
     this->invG.resize(Nu,N2);
     this->invH.resize(Nu,Nu);
@@ -169,6 +170,63 @@ fullStabilizer::~fullStabilizer(){}
  * @param reference Desired set point
  * @return desire state X (k+1)
  */
+void fullStabilizer::initfilters(){
+    Filterx.butterworth     (this->sampletime,this->freq*0.5,3);
+    Filterdx.butterworth    (this->sampletime,this->freq*0.5,3);
+    Filterddx.butterworth   (this->sampletime,this->freq*0.5,3);
+    Filtery.butterworth     (this->sampletime,this->freq*1,1);
+    Filterdy.butterworth    (this->sampletime,this->freq*1,1);
+    Filterddy.butterworth   (this->sampletime,this->freq*1,3);
+    Filteralfa.butterworth  (this->sampletime,this->freq*1,3);
+    Filteralfad.butterworth (this->sampletime,this->freq*1,1);
+    Filterbeta.butterworth  (this->sampletime,this->freq*1,3);
+    Filterbetad.butterworth (this->sampletime,this->freq*1,1);
+    this->Fgcomx[0]=0;this->Fgcomx[1]=0;this->Fgcomx[2]=0;
+    this->Fgcomy[0]=0;this->Fgcomy[1]=0;this->Fgcomy[2]=0;
+}
+
+std::vector<double> fullStabilizer::filterdata(double gcomx,double gcomy,double TsCart){
+    double gcom_old,gdcom_old,gcom_oldy,gdcom_oldy=0;
+
+    gcom_old    = this->Fgcomx[0];
+    gdcom_old   = this->Fgcomx[1];
+    this->Fgcomx[0]   = Filterx.applyFilter(gcomx);    // gcom is the estimated COM in world coordinate
+    double speedx    = (this->Fgcomx[0]-gcom_old)/TsCart;
+
+
+    gcom_oldy    = this->Fgcomy[0];
+    gdcom_oldy    = this->Fgcomy[1];
+    this->Fgcomy[0]    = gcomy;    // gcom is the estimated COM in world coordinate
+    double speedy    = (this->Fgcomy[0]-gcom_oldy)/TsCart;
+
+    this->Fgcomx[1]=speedx;
+    this->Fgcomy[1]=speedy;
+
+    this->Fgcomx[2] = (this->Fgcomx[1]-gdcom_old)/TsCart;
+    this->Fgcomy[2] = (this->Fgcomy[1]-gdcom_oldy)/TsCart;
+
+    std::vector<double> returnvector(6,0);
+
+
+    returnvector[0]   = this->Fgcomx[0];//gcomx; // gcom is the estimated COM in world coordinate
+    returnvector[1]   = Filterdx.applyFilter  (this->Fgcomx[1]);
+    returnvector[2]   = Filterddx.applyFilter (this->Fgcomx[2]);
+
+    returnvector[3]   = Filtery.applyFilter   (gcomy); // gcom is the estimated COM in world coordinate
+    returnvector[4]   = Filterdy.applyFilter  (this->Fgcomy[1]);
+    returnvector[5]   = Filterddy.applyFilter (this->Fgcomy[2]);
+
+    return returnvector;
+}
+std::vector<double> fullStabilizer::filterdata2(double alfa,double alfad,double beta,double betad){
+    std::vector<double> returnvector(4,0);
+    returnvector[0]   = Filteralfa.applyFilter  (alfa);
+    returnvector[1]   = Filteralfad.applyFilter  (alfad);
+    returnvector[2]   = Filterbeta.applyFilter  (beta);
+    returnvector[3]   = Filterbetad.applyFilter  (betad);
+    return returnvector;
+}
+
 double fullStabilizer::LQRcontroller(Vector2d States, double reference)
 {
         double LQRinput=this->LQRgains[0]*(reference-States(0))+this->LQRgains[1]*(-States(0));
@@ -262,7 +320,7 @@ void fullStabilizer::MPC(double Yt,double *Wt){
             X_a=Ampc(j_a)*X[k+j_a]+X_a;
         }
         X[k]=X_b-X_a;
-        //cout<<X[k+1]<<"	"<<X[k]<<endl;
+        //cout<<X[k+1]<<"    "<<X[k]<<endl;
     }
     // 3= compute n(t)=y(t)-x(call) with x(call) the model output
     N[N2]=Yt-X[N2];
@@ -313,7 +371,7 @@ void fullStabilizer::MPC(double Yt,double *Wt){
     for(k=N2-1;k>=0;k--){
         Ybase[N2-1-k]=N[k]+X[k];
     }
-    X[N2]=Yt; // SERIE-PARALELO
+    //X[N2]=Yt; // SERIE-PARALELO
     // 7= New control input U=U+ inv(G'*G)*G'*Err
     double Ref[N2+1];
     Ref[0]=Yt;
@@ -324,29 +382,25 @@ void fullStabilizer::MPC(double Yt,double *Wt){
     for(k=0;k<N2;k++){
         Err[k]=(Ref[k+1]-Ybase[k]);
     }
-    int constraint=1;
-    VectorXd prueba;
-    //if(constraint){
-        prueba=this->saturateMPC(Err,Ybase,U);
-    //}
-    //else{
-//        for(k=0;k<Nu;k++){
-//            Uopt[k]=0;
-//        }
-//        for(int i=0;i<Nu;i++){
-//            for(k=0;k<N2;k++){
-//                Uopt[i] += invG(i,k)*Err[k];
-//            }
-//        }
-    //}
-    //if(constraint){
-      //  U[N2]=U[N2]+prueba[0];
-    //}
-    //else{
-        U[N2]=U[N2]+prueba[0];
-    //}
-      //  cout<<"controlefforts: "<<Uopt[0]<<"    "<<prueba[0]<<endl;
 
+    if(this->constraints){
+        VectorXd prueba;
+        prueba=this->saturateMPC(Err,Ybase,U);
+        U[N2]=U[N2]+prueba[0];
+        return;
+    }
+    else{
+        for(k=0;k<Nu;k++){
+            Uopt[k]=0;
+        }
+        for(int i=0;i<Nu;i++){
+            for(k=0;k<N2;k++){
+                Uopt[i] += invG(i,k)*Err[k];
+            }
+        }
+        U[N2]=U[N2]+Uopt[0];
+        return;
+    }
 }
 /**
  * @brief integralCtrl::applyControl
@@ -358,7 +412,7 @@ void fullStabilizer::MPC(double Yt,double *Wt){
 double fullStabilizer::applyControl(Vector2d States,double controlEffort){
     Vector2d temporal=this->A*States+this->B*controlEffort;
     //double output=this->C(0)*temporal(0)+this->C(1)*temporal(1);
-    States=temporal;
+    this->States=temporal;
     return temporal(0);
 
 }
@@ -375,54 +429,11 @@ double fullStabilizer::apply(double *ref){
         return this->LQRcontroller(this->States,ref[0]);
     }
     else{
-        this->MPC(States(0),ref);
+        double CP=this->C(0)*States(0)+this->C(1)*States(1);
+        this->MPC(CP,ref);
         return this->applyControl(this->States,this->U[this->N2]);
     }
 
-}
-void fullStabilizer::initfilters(){
-        Filterx.butterworth     (this->sampletime,this->freq*1,1);
-        Filterdx.butterworth    (this->sampletime,this->freq*1,1);
-        Filterddx.butterworth   (this->sampletime,this->freq*1,1);
-        Filtery.butterworth     (this->sampletime,this->freq*4,1);
-        Filterdy.butterworth    (this->sampletime,this->freq*1,1);
-        Filterddy.butterworth   (this->sampletime,this->freq*1,3);
-        this->Fgcomx[0]=0;this->Fgcomx[1]=0;this->Fgcomx[2]=0;
-        this->Fgcomy[0]=0;this->Fgcomy[1]=0;this->Fgcomy[2]=0;
-}
-
-std::vector<double> fullStabilizer::filterdata(double gcomx,double gcomy,double TsCart){
-    double gcom_old,gdcom_old,gcom_oldy,gdcom_oldy=0;
-
-    gcom_old    = this->Fgcomx[0];
-    gdcom_old   = this->Fgcomx[1];
-    this->Fgcomx[0]   = Filterx.applyFilter(gcomx);	// gcom is the estimated COM in world coordinate
-    double speedx	= (this->Fgcomx[0]-gcom_old)/TsCart;
-
-
-    gcom_oldy	= this->Fgcomy[0];
-    gdcom_oldy	= this->Fgcomy[1];
-    this->Fgcomy[0]	= gcomy;	// gcom is the estimated COM in world coordinate
-    double speedy	= (this->Fgcomy[0]-gcom_oldy)/TsCart;
-
-    this->Fgcomx[1]=speedx;
-    this->Fgcomy[1]=speedy;
-
-    this->Fgcomx[2] = (this->Fgcomx[1]-gdcom_old)/TsCart;
-    this->Fgcomy[2] = (this->Fgcomy[1]-gdcom_oldy)/TsCart;
-
-    std::vector<double> returnvector(6,0);
-
-
-    returnvector[0]   = this->Fgcomx[0];//gcomx; // gcom is the estimated COM in world coordinate
-    returnvector[1]   = Filterdx.applyFilter  (this->Fgcomx[1]);
-    returnvector[2]   = Filterddx.applyFilter (this->Fgcomx[2]);
-
-    returnvector[3]   = Filtery.applyFilter   (gcomy); // gcom is the estimated COM in world coordinate
-    returnvector[4]   = Filterdy.applyFilter  (this->Fgcomy[1]);
-    returnvector[5]   = Filterddy.applyFilter (this->Fgcomy[2]);
-
-    return returnvector;
 }
 VectorXd fullStabilizer::saturateMPC(double *Err, double *Ybase,std::vector<double> U){
 
@@ -432,30 +443,30 @@ VectorXd fullStabilizer::saturateMPC(double *Err, double *Ybase,std::vector<doub
     for (int i=0;i<N2;i++){
         Error(i)=-Err[i];
     }
-    double Umax=500000;
-    double Umin=-100000;
+//    double Umax=500000;
+//    double Umin=-100000;
 
-    for (int i=0;i<Nu;i++){
-        this->ConstraintB(i)=Umax*pow(Umax,i)-U[N2-i];
-        this->ConstraintB(i+Nu)=U[N2-i]-Umin*pow(Umax,i);
-    }
+//    for (int i=0;i<Nu;i++){
+//        this->ConstraintB(i)=Umax*pow(Umax,i)-U[N2-i];
+//        this->ConstraintB(i+Nu)=U[N2-i]-Umin*pow(Umax,i);
+//    }
 
 
-    double dU=U[N2]-U[N2+1];
-    double deltaUmax=80000;
-    this->ConstraintB.block(2*Nu,0,Nu,1)=(VectorXd::Ones(Nu,1))*(deltaUmax+dU);
-    this->ConstraintB.block(3*Nu,0,Nu,1)=(VectorXd::Ones(Nu,1))*(deltaUmax-dU);
+//    double dU=U[N2]-U[N2+1];
+//    double deltaUmax=80000;
+//    this->ConstraintB.block(2*Nu,0,Nu,1)=(VectorXd::Ones(Nu,1))*(deltaUmax+dU);
+//    this->ConstraintB.block(3*Nu,0,Nu,1)=(VectorXd::Ones(Nu,1))*(deltaUmax-dU);
 
-    double maxy=0.05;
-    double miny=-0.15;
+    double maxy=0.2;
+    double miny=-0.2;
     VectorXd maxConstraint(N2);
     VectorXd minConstraint(N2);
     for (int i=0;i<N2;i++){
         maxConstraint(i)=maxy-Ybase[0];
         minConstraint(i)=Ybase[0]-miny;
     }
-    this->ConstraintB.block(4*Nu,0,N2,1)=maxConstraint;
-    this->ConstraintB.block(4*Nu+N2,0,N2,1)=minConstraint;
+    this->ConstraintB.block(0,0,N2,1)=maxConstraint;
+    this->ConstraintB.block(N2,0,N2,1)=minConstraint;
 
     VectorXd f(Nu);
     VectorXd eta(Nu);
@@ -473,8 +484,8 @@ VectorXd fullStabilizer::saturateMPC(double *Err, double *Ybase,std::vector<doub
 
         if(evalConstraint>this->ConstraintB[i]){
             kk=kk+1;
-            cout<<"I:   "<<i<<endl;
-            //break;
+         //   cout<<"I:   "<<i<<endl;
+            break;
         }
     }
 

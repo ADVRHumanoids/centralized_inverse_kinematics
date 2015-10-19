@@ -20,12 +20,16 @@ centralized_inverse_kinematics_thread::centralized_inverse_kinematics_thread(   
     _ft_measurements(),
     ik_problem(),
     _is_clik(false),
-    _counter(0)
+    _counter(0),
+    _robot_real(get_robot_name(), get_urdf_path(), get_srdf_path())
     
 {
     // setting floating base under left foot
     robot.idynutils.updateiDyn3Model(_q, true);
     robot.idynutils.setFloatingBaseLink(robot.idynutils.left_leg.end_effector_name);
+
+    _robot_real.updateiDyn3Model(_q, true);
+    _robot_real.setFloatingBaseLink(robot.idynutils.left_leg.end_effector_name);
 
     RobotUtils::ftPtrMap ft_sensors = robot.getftSensors();
     for(RobotUtils::ftPtrMap::iterator it = ft_sensors.begin();
@@ -56,6 +60,7 @@ bool centralized_inverse_kinematics_thread::custom_init()
         _ft_measurements[i].second = -1.0*ft_readings[_ft_measurements[i].first];
 
     robot.idynutils.updateiDyn3Model(_q, _ft_measurements, true);
+    _robot_real.updateiDyn3Model(_q, true);
 
     std::string urdf_path = get_urdf_path();
     std::string srdf_path = get_srdf_path();
@@ -122,7 +127,7 @@ void centralized_inverse_kinematics_thread::run()
     {
         /** Sense **/
         RobotUtils::ftReadings ft_readings = robot.senseftSensors();
-        yarp::sig::Vector imu = -1.0*imuIFace->sense();
+        yarp::sig::Vector imu = imuIFace->sense();
 
         ik_problem->controlPitch.controlFlag = 1;
         double refPitch[ik_problem->controlPitch.Nu];
@@ -145,6 +150,7 @@ void centralized_inverse_kinematics_thread::run()
 
         /** Update Models **/
         robot.idynutils.updateiDyn3Model(_q, _ft_measurements, true);
+        _robot_real.updateiDyn3Model(q_measured, true);
 
 
         if(ik_problem->reset_solver && ik_problem->homing_done){
@@ -163,9 +169,30 @@ void centralized_inverse_kinematics_thread::run()
                 for(unsigned int j = 0; j < 3; ++j)
                     hipRef(i,j) = Hiprotation(i,j);
             }
-            std::cout<<"reference Torso:"<<std::endl;
-            cartesian_utils::printHomogeneousTransform(hipRef);std::cout<<std::endl;
             ik_problem->taskTorso->setReference(hipRef);
+
+            double comRef[ik_problem->comStabilizer.Nu];
+            double hipcontrol = 0.0;
+            Vector3d hipOffset;
+            std::vector<double> comInfo(6);
+            double fgcom[3], fgcomy[3];
+            comInfo = ik_problem->comStabilizer.filterdata(
+                        _robot_real.iDyn3_model.getCOM()[0],
+                        _robot_real.iDyn3_model.getCOM()[1], get_thread_period());
+            for(unsigned int i = 0; i < 3; ++i){
+                fgcom[i] = comInfo[i];
+                fgcomy[i] = comInfo[i+3];
+            }
+            ik_problem->comStabilizer.States<<comInfo[0]-ik_problem->comStabilizer.offset, comInfo[1];
+            for(unsigned int i = 0; i < ik_problem->comStabilizer.Nu; ++i)
+                comRef[i] = 0.0;
+            Vector3d COMvector(0.0, 0.0, 0.25);
+            hipOffset = ik_problem->controlPitch.DynamicCompensator(Hiprotation, COMvector, 50, 20);
+            hipcontrol = ik_problem->comStabilizer.apply(comRef)*0.85;
+            double CoMdx = ik_problem->comStabilizer.offset + hipcontrol + hipOffset[0];
+            yarp::sig::Vector CoMd = ik_problem->taskCoM->getReference();
+            CoMd(0) = CoMdx;
+            ik_problem->taskCoM->setReference(CoMd);
 
 //            if(ik_problem->updateWalkingPattern(ik_problem->LFootRef, ik_problem->RFootRef,
 //                                                ik_problem->pelvisRef, ik_problem->comRef,
@@ -210,7 +237,10 @@ void centralized_inverse_kinematics_thread::run()
                                                               main_problem->bounds,
                                                               main_problem->global_constraints,
                                                               main_problem->damped_least_square_eps));
-            ik_problem->reset_solver = true;           
+            ik_problem->reset_solver = true;
+
+            ik_problem->comStabilizer.offset = _robot_real.iDyn3_model.getCOM()[0];
+
         }
 
         _dq_ref = 0.0;

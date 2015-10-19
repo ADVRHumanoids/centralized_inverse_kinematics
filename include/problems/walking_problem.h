@@ -9,6 +9,7 @@
 #include <geometry_msgs/TransformStamped.h>
 #include <IntegralControl.h>
 #include <idynutils/yarp_IMU_interface.h>
+#include <comStabilizer.h>
 
 class logger_proto
 {
@@ -116,6 +117,7 @@ public:
     bool start_walking_pattern;
 
     IntegralControl controlPitch;
+    fullStabilizer comStabilizer;
 
 
 private: void generateFootSteps(const int number_of_steps, const double step_width, const double step_lenght);

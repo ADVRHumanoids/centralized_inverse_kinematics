@@ -58,7 +58,8 @@ walking_problem::walking_problem(iDynUtils& robot_model, std::string &urdf_path,
     log_pelvis_d("pelvis_d", logger_proto::file_type::matlab),
     log_q_d("q_d", logger_proto::file_type::matlab),
     log_zmp_d("zmp_d", logger_proto::file_type::matlab),
-    controlPitch()
+    controlPitch(),
+    comStabilizer()
 {
     LFootRef.eye();
     RFootRef.eye();
@@ -212,15 +213,15 @@ boost::shared_ptr<walking_problem::ik_problem> walking_problem::create_problem(c
     taskList.push_back(taskRFoot);
     taskList.push_back(taskLFoot);
     //taskList.push_back(taskPelvis);
-    //taskList.push_back(taskCoM);
+    taskList.push_back(taskCoM);
     taskList.push_back(taskTorso);
     problem->stack_of_tasks.push_back(OpenSoT::tasks::Aggregated::TaskPtr(
         new OpenSoT::tasks::Aggregated(taskList, state.size())));
 
-    taskList.clear();
-    taskList.push_back(taskRArm);
-    problem->stack_of_tasks.push_back(OpenSoT::tasks::Aggregated::TaskPtr(
-        new OpenSoT::tasks::Aggregated(taskList, state.size())));
+//    taskList.clear();
+//    taskList.push_back(taskRArm);
+//    problem->stack_of_tasks.push_back(OpenSoT::tasks::Aggregated::TaskPtr(
+//        new OpenSoT::tasks::Aggregated(taskList, state.size())));
 
     taskList.clear();
     taskList.push_back(taskPostural);

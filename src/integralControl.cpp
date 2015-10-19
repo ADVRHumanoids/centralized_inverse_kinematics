@@ -158,7 +158,7 @@ IntegralControl::~IntegralControl(){}
  */
 
 void IntegralControl::initfilters(){
-    Filteralfa.butterworth   (TsCart,this->freq*1,1);
+    Filteralfa.butterworth   (TsCart,this->freq*0.5,1);
     Filteralfad.butterworth   (TsCart,this->freq*0.5,1);
 }
 std::vector<double> IntegralControl::filterdata2(double alfa,double alfad){

@@ -25,6 +25,7 @@ public:
      * @param ref array of size control.N2
      * @return the desired angle
      */
+    int constraints;
     double Fgcomx[3],Fgcomy[3];
     FilterH Filterx;
     FilterH Filtery;
@@ -32,7 +33,13 @@ public:
     FilterH Filterdy;
     FilterH Filterddx;
     FilterH Filterddy;
+    FilterH Filteralfa;
+    FilterH Filteralfad;
+    FilterH Filterbeta;
+    FilterH Filterbetad;
+
     double sampletime;
+    std::vector<double> filterdata2(double alfa,double alfad,double beta,double betad);
 
     std::vector<double> filterdata(double gcomx,double gcomy,double TsCart);
     double apply(double *ref);
@@ -40,6 +47,8 @@ public:
      * @brief States Position and velocity
      */
     Vector2d States;
+    double offset;
+    double offsety;
     /**
      * controlFlag==0 for LQR;   controlFlag==1 for MPC
      */
@@ -52,9 +61,7 @@ public:
     double z_c;
     double g;
     double m;
-    std::vector<double> X	;
-    int sizeA;
-
+    int constraint;
 private:
     //SS discrete system
     Matrix2d A;
@@ -65,32 +72,30 @@ private:
     double LQRgains[2];
 
 
-
+    int sizeA;
     int sizeB;
     int sizeC;
     int sizeD;
 
 
-
-    //tranfer function for MPC
-    VectorXd Ampc;
-    VectorXd Bmpc;
-    //Filter tranfer function for MPc
-    VectorXd Cmpc;
-    VectorXd Dmpc;
-    //MPC internal variables
-   //  std::vector<double> X	;
-     std::vector<double> U	;
-     std::vector<double> NF;
-     std::vector<double> N;
-     MatrixXd F;
-     MatrixXd invH;
-     VectorXd ConstraintB;
-     MatrixXd ConstraintA;
-     MatrixXd invG;
+     VectorXd Ampc;
+     VectorXd Bmpc;
+     //Filter tranfer function for MPc
+     VectorXd Cmpc;
+     VectorXd Dmpc;
+     //MPC internal variables
+      std::vector<double> X    ;
+      std::vector<double> U    ;
+      std::vector<double> NF;
+      std::vector<double> N;
+      MatrixXd F;
+      MatrixXd invH;
+      VectorXd ConstraintB;
+      MatrixXd ConstraintA;
+      MatrixXd invG;
 
 
-     void initfilters();
+    void initfilters();
     double LQRcontroller(Vector2d States,double reference);
     void importGmatrix(std::string FILEG,std::string FILEH,std::string FILEF);
     void MPC(double Yt,double *Wt);
