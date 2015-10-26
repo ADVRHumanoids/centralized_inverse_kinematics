@@ -74,17 +74,17 @@ fullStabilizer::fullStabilizer()
 
     this->importGmatrix(FILEG,FILEH,FILEF);
 
-    this->ConstraintB.resize(2*N2);
-    this->ConstraintA.resize(2*N2,Nu);
+    this->ConstraintB.resize(2*N2+2*Nu);
+    this->ConstraintA.resize(2*N2+2*Nu,Nu);
 
-//    this->ConstraintA.block(0,0,Nu,Nu)=MatrixXd::Identity(Nu,Nu);
-//    this->ConstraintA.block(Nu,0,Nu,Nu)=-MatrixXd::Identity(Nu,Nu);
+    this->ConstraintA.block(0,0,Nu,Nu)=MatrixXd::Identity(Nu,Nu);
+    this->ConstraintA.block(Nu,0,Nu,Nu)=-MatrixXd::Identity(Nu,Nu);
 
 //    this->ConstraintA.block(2*Nu,0,Nu,Nu)=MatrixXd::Identity(Nu,Nu);
 //    this->ConstraintA.block(3*Nu,0,Nu,Nu)=-MatrixXd::Identity(Nu,Nu);
 
-    this->ConstraintA.block(0,0,N2,Nu)=this->F.transpose();
-    this->ConstraintA.block(N2,0,N2,Nu)=-this->F.transpose();
+    this->ConstraintA.block(2*Nu,0,N2,Nu)=this->F.transpose();
+    this->ConstraintA.block(2*Nu+N2,0,N2,Nu)=-this->F.transpose();
 
 
     this->freq=20;
@@ -443,13 +443,13 @@ VectorXd fullStabilizer::saturateMPC(double *Err, double *Ybase,std::vector<doub
     for (int i=0;i<N2;i++){
         Error(i)=-Err[i];
     }
-//    double Umax=500000;
-//    double Umin=-100000;
+    double Umax=20;
+    double Umin=-20;
 
-//    for (int i=0;i<Nu;i++){
-//        this->ConstraintB(i)=Umax*pow(Umax,i)-U[N2-i];
-//        this->ConstraintB(i+Nu)=U[N2-i]-Umin*pow(Umax,i);
-//    }
+    for (int i=0;i<Nu;i++){
+        this->ConstraintB(i)=Umax*pow(Umax,i)-U[N2-i];
+        this->ConstraintB(i+Nu)=U[N2-i]-Umin*pow(Umax,i);
+    }
 
 
 //    double dU=U[N2]-U[N2+1];

@@ -77,10 +77,10 @@ walking_problem::walking_problem(iDynUtils& robot_model, std::string &urdf_path,
 
 
     /** FROM HERE WE INITIALIZE CLOCOMOTOR **/
-    std::string saveDataPath = GetEnv("ROBOTOLOGY_ROOT") + "/build/robots/walking/data/";
+    std::string saveDataPath = GetEnv("WALKMAN_ROOT") + "/build/drc/walking/data/";
     yarp::sig::Matrix massMat;
     robot_model.iDyn3_model.getFloatingBaseMassMatrix(massMat);
-    std::string path_to_config = GetEnv("ROBOTOLOGY_ROOT") + "/robots/walking/app/conf/inputs";
+    std::string path_to_config = GetEnv("WALKMAN_ROOT") + "/drc/walking/app/conf/inputs";
 
     this->pattern_generator.reset(
                 new Clocomotor(robot_model.iDyn3_model.getNrOfDOFs(), 0.005, 0.005, massMat(0,0),

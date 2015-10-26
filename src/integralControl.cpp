@@ -75,17 +75,16 @@ IntegralControl::IntegralControl()
 
     this->importGmatrix(FILEG,FILEH,FILEF);
 
-    this->ConstraintB.resize(2*N2);
-    this->ConstraintA.resize(2*N2,Nu);
+    this->ConstraintB.resize(4*N2);
+    this->ConstraintA.resize(4*N2,Nu);
 
-//    this->ConstraintA.block(0,0,Nu,Nu)=MatrixXd::Identity(Nu,Nu);
-//    this->ConstraintA.block(Nu,0,Nu,Nu)=-MatrixXd::Identity(Nu,Nu);
-
-//    this->ConstraintA.block(2*Nu,0,Nu,Nu)=MatrixXd::Identity(Nu,Nu);
-//    this->ConstraintA.block(3*Nu,0,Nu,Nu)=-MatrixXd::Identity(Nu,Nu);
 
     this->ConstraintA.block(0,0,N2,Nu)=this->F.transpose();
     this->ConstraintA.block(N2,0,N2,Nu)=-this->F.transpose();
+
+    this->ConstraintA.block(2*N2,0,N2,Nu)=this->F.transpose();
+    this->ConstraintA.block(3*N2,0,N2,Nu)=-this->F.transpose();
+
     this->freq=20;
     this->TsCart=0.005;
     this->initfilters();
@@ -393,22 +392,8 @@ VectorXd IntegralControl::saturateMPC(double *Err, double *Ybase,std::vector<dou
     for (int i=0;i<N2;i++){
         Error(i)=-Err[i];
     }
-//    double Umax=500;
-//    double Umin=-500;
-
-//    for (int i=0;i<Nu;i++){
-//        this->ConstraintB(i)=Umax-U[N2-i];
-//        this->ConstraintB(i+Nu)=U[N2-i]-Umin;
-//    }
-
-
-//    double dU=U[N2]-U[N2+1];
-//    double deltaUmax=1000;
-//    this->ConstraintB.block(2*Nu,0,Nu,1)=(VectorXd::Ones(Nu,1))*(deltaUmax+dU);
-//    this->ConstraintB.block(3*Nu,0,Nu,1)=(VectorXd::Ones(Nu,1))*(deltaUmax-dU);
-
-    double maxy=0.41;
-    double miny=-0.41;
+    double maxy=20;
+    double miny=-20;
     VectorXd maxConstraint(N2);
     VectorXd minConstraint(N2);
     for (int i=0;i<N2;i++){
@@ -417,6 +402,18 @@ VectorXd IntegralControl::saturateMPC(double *Err, double *Ybase,std::vector<dou
     }
     this->ConstraintB.block(0,0,N2,1)=maxConstraint;
     this->ConstraintB.block(N2,0,N2,1)=minConstraint;
+
+    double dmaxy=0.24500;
+    double dminy=-0.24500;
+    VectorXd dmaxConstraint(N2);
+    VectorXd dminConstraint(N2);
+    for (int i=0;i<N2;i++){
+        dmaxConstraint(i)=(X[N2-i]+dmaxy)-Ybase[i];
+        dminConstraint(i)=Ybase[i]-(X[N2-i]+dminy);
+    }
+    this->ConstraintB.block(2*N2,0,N2,1)=dmaxConstraint;
+    this->ConstraintB.block(3*N2,0,N2,1)=dminConstraint;
+
     VectorXd f(Nu);
     VectorXd eta(Nu);
     f=this->F*Error;

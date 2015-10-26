@@ -117,7 +117,10 @@ public:
     bool start_walking_pattern;
 
     IntegralControl controlPitch;
+    IntegralControl controlRoll;
+
     fullStabilizer comStabilizer;
+    fullStabilizer comStabilizery;
 
 
 private: void generateFootSteps(const int number_of_steps, const double step_width, const double step_lenght);
