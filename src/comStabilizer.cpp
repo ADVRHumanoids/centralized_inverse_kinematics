@@ -13,7 +13,7 @@ fullStabilizer::fullStabilizer()
     this->N2=30;
     this->alfa=0;
     this->controlFlag=0;
-    constraints=1;
+    constraints=0;
     std::string FILEG="invGfull.txt";
     std::string FILEH="invHfull.txt";
     std::string FILEF="Ffull.txt";
