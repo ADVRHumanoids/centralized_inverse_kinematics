@@ -151,7 +151,6 @@ void centralized_inverse_kinematics_thread::run()
 
         Matrix3d Hiprotation = Matrix3d::Identity();
         Hiprotation = Ry(ik_problem->controlPitch.apply(refPitch));
-        //cout<<ik_problem->controlPitch.apply(refPitch)<<"   "<<filterAngPitch[0]<<endl;
         Hiprotation=Hiprotation*Rx(ik_problem->controlRoll.apply(refRoll));
         yarp::sig::Vector q_measured(_q.size(), 0.0);
         robot.sense(q_measured, _dq, _tau);
@@ -203,7 +202,7 @@ void centralized_inverse_kinematics_thread::run()
                 fgcomy[i] = comInfo[i+3];
             }
             ik_problem->comStabilizer.States<<comInfo[0]-ik_problem->comStabilizer.offset, comInfo[1];
-            ik_problem->comStabilizery.States<<comInfo[3]-ik_problem->comStabilizery.offset, comInfo[5];
+            ik_problem->comStabilizery.States<<comInfo[3]-ik_problem->comStabilizery.offset, comInfo[4];
 
             for(unsigned int i = 0; i < ik_problem->comStabilizer.Nu; ++i)
                 comRef[i] = 0;
