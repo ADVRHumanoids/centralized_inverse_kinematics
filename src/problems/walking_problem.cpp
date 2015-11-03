@@ -259,7 +259,7 @@ boost::shared_ptr<walking_problem::ik_problem> walking_problem::homing_problem(c
     RFootReference(1,3) = RFootRef(1,3);
     RFootReference(2,3) = waist_T_rsole(2,3);
     //RFootReference(0,3) = 0.093; RFootReference(1,3) = -0.14; RFootReference(2,3) = -1.09;
-    taskRFoot->setReference(RFootReference);
+    //taskRFoot->setReference(RFootReference);
     taskRFoot->setLambda(LAMBDA_GAIN);
     std::cout<<"Homing RFoot: "<<std::endl; cartesian_utils::printHomogeneousTransform(RFootReference);
 
@@ -275,7 +275,7 @@ boost::shared_ptr<walking_problem::ik_problem> walking_problem::homing_problem(c
     LFootReference(1,3) = LFootRef(1,3);
     LFootReference(2,3) = waist_T_lsole(2,3);
     //LFootReference(0,3) = 0.093; LFootReference(1,3) = 0.14; LFootReference(2,3) = -1.09;
-    taskLFoot->setReference(LFootReference);
+    //taskLFoot->setReference(LFootReference);
     taskLFoot->setLambda(LAMBDA_GAIN);
     std::cout<<"Homing LFoot: "<<std::endl; cartesian_utils::printHomogeneousTransform(LFootReference);
 
@@ -298,7 +298,7 @@ boost::shared_ptr<walking_problem::ik_problem> walking_problem::homing_problem(c
 //    q_postural[robot_model.right_arm.joint_numbers[3]] = -20.0*M_PI/180.0;
 //    q_postural[robot_model.left_arm.joint_numbers[0]] = 5.0*M_PI/180.0;
 //    q_postural[robot_model.right_arm.joint_numbers[0]] = 5.0*M_PI/180.0;
-    taskPostural->setReference(q_postural);
+    //taskPostural->setReference(q_postural);
     taskPostural->setLambda(LAMBDA_GAIN);
 
     /** Create bounds **/
@@ -317,18 +317,18 @@ boost::shared_ptr<walking_problem::ik_problem> walking_problem::homing_problem(c
         new VelocityLimits(1.0, mSecToSec(dT), state.size())));
 
     std::list<OpenSoT::tasks::Aggregated::TaskPtr> taskList;
-    taskList.push_back(subTaskTorso);
+    //taskList.push_back(subTaskTorso);
     taskList.push_back(taskRFoot);
     taskList.push_back(taskLFoot);
     problem->stack_of_tasks.push_back(OpenSoT::tasks::Aggregated::TaskPtr(
         new OpenSoT::tasks::Aggregated(taskList, state.size())));
-    problem->stack_of_tasks[0]->getConstraints().push_back(ch);
+    //problem->stack_of_tasks[0]->getConstraints().push_back(ch);
 
     taskList.clear();
     taskList.push_back(taskPostural);
     problem->stack_of_tasks.push_back(OpenSoT::tasks::Aggregated::TaskPtr(
         new OpenSoT::tasks::Aggregated(taskList, state.size())));
-    problem->stack_of_tasks[1]->getConstraints().push_back(ch);
+    //problem->stack_of_tasks[1]->getConstraints().push_back(ch);
 
     std::list<OpenSoT::constraints::Aggregated::ConstraintPtr> bounds;
     bounds.push_back(boundJointLimits);
