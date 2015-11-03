@@ -104,7 +104,7 @@ bool centralized_inverse_kinematics_thread::custom_init()
         cin.get();
 
     return true;
-    }
+}
 
 void centralized_inverse_kinematics_thread::custom_release()
 {
@@ -151,7 +151,7 @@ void centralized_inverse_kinematics_thread::run()
 
         Matrix3d Hiprotation = Matrix3d::Identity();
         Hiprotation = Ry(ik_problem->controlPitch.apply(refPitch));
-        cout<<ik_problem->controlPitch.apply(refPitch)<<"   "<<filterAngPitch[0]<<endl;
+        //cout<<ik_problem->controlPitch.apply(refPitch)<<"   "<<filterAngPitch[0]<<endl;
         Hiprotation=Hiprotation*Rx(ik_problem->controlRoll.apply(refRoll));
         yarp::sig::Vector q_measured(_q.size(), 0.0);
         robot.sense(q_measured, _dq, _tau);
