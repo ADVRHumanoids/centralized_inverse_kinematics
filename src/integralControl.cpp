@@ -17,7 +17,7 @@ IntegralControl::IntegralControl()
     std::string FILEG="invGbalance.txt";
     std::string FILEH="invHbalance.txt";
     std::string FILEF="Fbalance.txt";
-    constraints=1;
+    constraints=0;
     this->sampletime=0.005;
     /*LQR GAINS DEFINITION*/
 //    Qc=100;

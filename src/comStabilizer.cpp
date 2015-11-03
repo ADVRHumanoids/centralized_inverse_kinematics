@@ -13,7 +13,7 @@ fullStabilizer::fullStabilizer()
     this->N2=30;
     this->alfa=0;
     this->controlFlag=0;
-    constraints=1;
+    constraints=0;
     std::string FILEG="invGfull.txt";
     std::string FILEH="invHfull.txt";
     std::string FILEF="Ffull.txt";
@@ -249,6 +249,7 @@ void fullStabilizer::importGmatrix(std::string FILEG,std::string FILEH,std::stri
             for (int j=0;j<N2;j++){
                 if(!in.eof()){
                     in>>invG(i,j);
+                    cout<<"INVG"<<" "<<invG(i,j)<<endl;
                 }
             }
         }
@@ -260,6 +261,7 @@ void fullStabilizer::importGmatrix(std::string FILEG,std::string FILEH,std::stri
             for (int j=0;j<Nu;j++){
                 if(!in.eof()){
                     in>>this->invH(i,j);
+                    cout<<"INVH"<<" "<<invH(i,j)<<endl;
                 }
             }
         }

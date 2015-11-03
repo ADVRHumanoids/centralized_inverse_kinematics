@@ -151,7 +151,6 @@ void centralized_inverse_kinematics_thread::run()
 
         Matrix3d Hiprotation = Matrix3d::Identity();
         Hiprotation = Ry(ik_problem->controlPitch.apply(refPitch));
-        cout<<ik_problem->controlPitch.apply(refPitch)<<"   "<<filterAngPitch[0]<<endl;
         Hiprotation=Hiprotation*Rx(ik_problem->controlRoll.apply(refRoll));
         yarp::sig::Vector q_measured(_q.size(), 0.0);
         robot.sense(q_measured, _dq, _tau);
@@ -212,15 +211,15 @@ void centralized_inverse_kinematics_thread::run()
                 comRefy[i] = 0.0;
             Vector3d COMvector(0.0, 0.0, 0.25);
             hipOffset = ik_problem->controlPitch.DynamicCompensator(Hiprotation, COMvector, 50, 20);
-            hipcontrol = ik_problem->comStabilizer.apply(comRef)*0.85;
-            hipcontroly = ik_problem->comStabilizery.apply(comRefy)*0.85;
+           // hipcontrol = ik_problem->comStabilizer.apply(comRef);
+           // hipcontroly = ik_problem->comStabilizery.apply(comRefy);
 
             double CoMdx = ik_problem->comStabilizer.offset + hipcontrol + hipOffset[0];
             double CoMdy = hipcontroly + hipOffset[1];
 
             yarp::sig::Vector CoMd = ik_problem->taskCoM->getReference();
             CoMd(0) = CoMdx;
-            CoMd(1) = CoMdy;
+           // CoMd(1) = CoMdy;
             ik_problem->taskCoM->setReference(CoMd);
 
 //            if(ik_problem->updateWalkingPattern(ik_problem->LFootRef, ik_problem->RFootRef,
