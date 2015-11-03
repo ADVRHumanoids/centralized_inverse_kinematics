@@ -104,7 +104,7 @@ bool centralized_inverse_kinematics_thread::custom_init()
         cin.get();
 
     return true;
-    }
+}
 
 void centralized_inverse_kinematics_thread::custom_release()
 {
@@ -202,7 +202,7 @@ void centralized_inverse_kinematics_thread::run()
                 fgcomy[i] = comInfo[i+3];
             }
             ik_problem->comStabilizer.States<<comInfo[0]-ik_problem->comStabilizer.offset, comInfo[1];
-            ik_problem->comStabilizery.States<<comInfo[3]-ik_problem->comStabilizery.offset, comInfo[5];
+            ik_problem->comStabilizery.States<<comInfo[3]-ik_problem->comStabilizery.offset, comInfo[4];
 
             for(unsigned int i = 0; i < ik_problem->comStabilizer.Nu; ++i)
                 comRef[i] = 0;
