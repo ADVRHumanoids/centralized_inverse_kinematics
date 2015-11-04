@@ -35,7 +35,7 @@ IntegralControl::IntegralControl()
     /*SYSTEM AND FILTER TRANSFER FUCNTION (TF) LENGHTS*/
     this->sizeA=3;
     this->sizeB=3;
-    this->sizeC=3;
+    this->sizeC=2;
     this->sizeD=3;
     this->States<<0,0;
     this->Ampc.resize(this->sizeA);
@@ -52,14 +52,13 @@ IntegralControl::IntegralControl()
      * )*/
 //    this->Cmpc<<0.1234,0,-0.1234;
 //    this->Dmpc<<1.0000,-1.7525,    0.7533;
-
-    this->Cmpc<<0.2742,0,-0.2742;
-    this->Dmpc<<1,-0.5485, 0.4515;
+    this->Cmpc<<  0,1;
+    this->Dmpc<< 1.0000 ,-2,1;
 
 
     /* tunning parameter, should be consistent with invG*/
     this->Nu=7;
-    this->N2=10;
+    this->N2=20;
     this->alfa=0;
     this->controlFlag==0;
     /*Initializations*/
@@ -157,8 +156,8 @@ IntegralControl::~IntegralControl(){}
  */
 
 void IntegralControl::initfilters(){
-    Filteralfa.butterworth   (TsCart,this->freq*0.5,1);
-    Filteralfad.butterworth   (TsCart,this->freq*0.5,1);
+    Filteralfa.butterworth   (TsCart,this->freq*1,1);
+    Filteralfad.butterworth   (TsCart,this->freq*1,1);
 }
 std::vector<double> IntegralControl::filterdata2(double alfa,double alfad){
     std::vector<double> returnvector(2,0);
@@ -311,7 +310,7 @@ void IntegralControl::MPC(double Yt,double *Wt){
     for(k=N2-1;k>=0;k--){
         Ybase[N2-1-k]=N[k]+X[k];
     }
-    X[N2]=Yt; // SERIE-PARALELO
+    //X[N2]=Yt; // SERIE-PARALELO
     // 7= New control input U=U+ inv(G'*G)*G'*Err
     double Ref[N2+1];
     Ref[0]=Yt;
@@ -353,6 +352,7 @@ void IntegralControl::MPC(double Yt,double *Wt){
  */
 double IntegralControl::applyControl(Vector2d States,double controlEffort){
     Vector2d temporal=this->A*States+this->B*controlEffort;
+    States=temporal;
     return temporal(0);
 }
 /**

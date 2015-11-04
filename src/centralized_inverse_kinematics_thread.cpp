@@ -138,8 +138,8 @@ void centralized_inverse_kinematics_thread::run()
         double refPitch[ik_problem->controlPitch.Nu];
         double refRoll[ik_problem->controlPitch.Nu];
         for(unsigned i=0;i<ik_problem->controlPitch.Nu;i++){
-            refPitch[i]=0;
-            refRoll[i]=0;
+            refPitch[i]=ik_problem->controlPitch.offset;
+            refRoll[i]=ik_problem->controlRoll.offset;
         }
         std::vector<double> filterAngPitch(2,0);
         std::vector<double> filterAngRoll(2,0);
@@ -209,17 +209,17 @@ void centralized_inverse_kinematics_thread::run()
 
             for(unsigned int i = 0; i < ik_problem->comStabilizery.Nu; ++i)
                 comRefy[i] = 0.0;
-            Vector3d COMvector(0.0, 0.0, 0.25);
+            Vector3d COMvector(0.0, 0.0, 0.35);
             hipOffset = ik_problem->controlPitch.DynamicCompensator(Hiprotation, COMvector, 50, 20);
-           // hipcontrol = ik_problem->comStabilizer.apply(comRef);
-           // hipcontroly = ik_problem->comStabilizery.apply(comRefy);
+            hipcontrol = ik_problem->comStabilizer.apply(comRef);
+            hipcontroly = ik_problem->comStabilizery.apply(comRefy);
 
             double CoMdx = ik_problem->comStabilizer.offset + hipcontrol + hipOffset[0];
-            double CoMdy = hipcontroly + hipOffset[1];
+            double CoMdy = ik_problem->comStabilizery.offset + hipcontroly + hipOffset[1];
 
             yarp::sig::Vector CoMd = ik_problem->taskCoM->getReference();
             CoMd(0) = CoMdx;
-           // CoMd(1) = CoMdy;
+            CoMd(1) = CoMdy;
             ik_problem->taskCoM->setReference(CoMd);
 
 //            if(ik_problem->updateWalkingPattern(ik_problem->LFootRef, ik_problem->RFootRef,
@@ -269,7 +269,8 @@ void centralized_inverse_kinematics_thread::run()
 
             ik_problem->comStabilizer.offset = _robot_real.iDyn3_model.getCOM()[0];
             ik_problem->comStabilizery.offset = _robot_real.iDyn3_model.getCOM()[1];
-
+            ik_problem->controlPitch.offset=imu(1);
+            ik_problem->controlRoll.offset=imu(0);
         }
 
         _dq_ref = 0.0;
