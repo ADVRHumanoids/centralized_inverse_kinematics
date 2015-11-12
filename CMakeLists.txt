@@ -57,7 +57,7 @@ INCLUDE_DIRECTORIES(include
 		    ${YARP_INCLUDE_DIRS} 
 		    ${idynutils_INCLUDE_DIRS}
 		    ${GYM_INCLUDE_DIRS}
-		    ${kdl_codyco_INCLUDE_DIRS} 
+		    ${iDynTree_INCLUDE_DIRS} 
                     ${PCL_INCLUDE_DIRS}
                     ${OpenSoT_INCLUDE_DIRS}
                     ${roscpp_INCLUDE_DIRS}
