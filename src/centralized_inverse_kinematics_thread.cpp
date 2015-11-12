@@ -122,7 +122,7 @@ void centralized_inverse_kinematics_thread::custom_release()
 void centralized_inverse_kinematics_thread::run()
 {
     double tic = yarp::os::Time::now();
-    cout<<"ENTERRRR"<<endl;
+
     if(ik_problem && qp_solver)
     {
         /** Sense **/
@@ -151,6 +151,7 @@ void centralized_inverse_kinematics_thread::run()
         }
         Matrix3d Hiprotation = Matrix3d::Identity();
 
+        Matrix3d Hiprotation = Matrix3d::Identity();
         Hiprotation = Ry(ik_problem->controlPitch.apply(refPitch));
      //   Hiprotation=Hiprotation*Rx(ik_problem->controlRoll.apply(refRoll));
         yarp::sig::Vector q_measured(_q.size(), 0.0);
@@ -217,11 +218,38 @@ void centralized_inverse_kinematics_thread::run()
 
             double CoMdx = hipcontrol + hipOffset[0];
             double CoMdy = hipcontroly + hipOffset[1];
+
             yarp::sig::Vector CoMd = ik_problem->taskCoM->getReference();
             CoMd(0) = CoMdx;
            // CoMd(1) = CoMdy;
             ik_problem->taskCoM->setReference(CoMd);
 
+//            if(ik_problem->updateWalkingPattern(ik_problem->LFootRef, ik_problem->RFootRef,
+//                                                ik_problem->pelvisRef, ik_problem->comRef,
+//                                                ik_problem->ZMPRef,
+//                                                stance_foot))
+//            {
+//                if(!ik_problem->walking_pattern_finished)
+//                {
+//                    ik_problem->switchSupportFoot(robot.idynutils, stance_foot);
+
+//                    ik_problem->taskLFoot->setReference(ik_problem->LFootRef);
+//                    ik_problem->taskRFoot->setReference(ik_problem->RFootRef);
+//                    ik_problem->taskPelvis->setReference(ik_problem->pelvisRef);
+//                    ik_problem->taskCoM->setReference(ik_problem->comRef);
+
+////                    yarp::sig::Matrix RArmRef = ik_problem->InitialRArmRef;
+////                    RArmRef(0,3) = RArmRef(0,3) - 0.4 + 0.4*cos(_counter/100.0);
+////                    RArmRef(1,3) = RArmRef(1,3) -0.4 + 0.4*cos(_counter/100.0);
+////                    yarp::sig::Vector dRArmRef(6, 0.0);
+////                    dRArmRef(0) = -(0.4/100.0)*sin(_counter/100.0);
+////                    dRArmRef(1) = -(0.4/100.0)*sin(_counter/100.0);
+////                    ik_problem->taskRArm->setReference(RArmRef, dRArmRef);
+////                    _counter++;
+//                }
+//            }
+//            else
+//                ROS_WARN_ONCE("WALKING PATTERN GENERATOR RETURN ERROR OR FINISHED!");
         }
 
         /** Update OpenSoTServer **/
