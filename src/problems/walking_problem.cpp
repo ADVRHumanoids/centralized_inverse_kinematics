@@ -195,7 +195,7 @@ boost::shared_ptr<walking_problem::ik_problem> walking_problem::create_problem(c
     com_ref[0] = comRef(0);
     com_ref[1] = comRef(1);
     com_ref[2] = comRef(2); //1.13
-    //taskCoM->setReference(com_ref);
+   // taskCoM->setReference(com_ref);
     std::cout<<"CoMRef:"<<std::endl;
     std::cout<<taskCoM->getReference()[0]<<"  "<<taskCoM->getReference()[1]<<"  "<<taskCoM->getReference()[2]<<std::endl;
     taskCoM->setLambda(LAMBDA_GAIN);
