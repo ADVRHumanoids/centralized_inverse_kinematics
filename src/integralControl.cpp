@@ -53,12 +53,15 @@ IntegralControl::IntegralControl()
 //    this->Cmpc<<0.1234,0,-0.1234;
 //    this->Dmpc<<1.0000,-1.7525,    0.7533;
 
+//    this->Cmpc<<0,1;
+//    this->Dmpc<<1,-2,1;
+
     this->Cmpc<<0.2742,0,-0.2742;
     this->Dmpc<<1,-0.5485, 0.4515;
-
-
+//    this->Cmpc<< 0,1;
+//    this->Dmpc<<1,-2,1;
     /* tunning parameter, should be consistent with invG*/
-    this->Nu=7;
+    this->Nu=4;
     this->N2=10;
     this->alfa=0;
     this->controlFlag==0;
@@ -85,7 +88,7 @@ IntegralControl::IntegralControl()
     this->ConstraintA.block(2*N2,0,N2,Nu)=this->F.transpose();
     this->ConstraintA.block(3*N2,0,N2,Nu)=-this->F.transpose();
 
-    this->freq=20;
+    this->freq=50;
     this->TsCart=0.005;
     this->initfilters();
 
@@ -340,6 +343,11 @@ void IntegralControl::MPC(double Yt,double *Wt){
             }
         }
         U[N2]=U[N2]+Uopt[0];
+        double Umax=100;
+        if(U[N2]>Umax)
+            U[N2]=Umax;
+        else if(U[N2]<-Umax)
+            U[N2]=-Umax;
         return;
     }
 
@@ -365,7 +373,7 @@ double IntegralControl::applyControl(Vector2d States,double controlEffort){
  */
 double IntegralControl::apply(double *ref){
     if (this->controlFlag==0){
-        return this->LQRcontroller(this->States,ref[0]);
+        return this->LQRcontroller(this->States,ref[this->Nu]);
     }
     else{
         this->MPC(States(0),ref);

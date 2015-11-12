@@ -56,6 +56,9 @@ public:
     int N2;
     double TsCart;
     double offset;
+    VectorXd spline;
+    double counts;
+    std::vector<double> X    ;
 private:
     //SS discrete system
     Matrix2d A;
@@ -85,7 +88,7 @@ private:
     VectorXd Cmpc;
     VectorXd Dmpc;
     //MPC internal variables
-    std::vector<double> X    ;
+
     std::vector<double> U    ;
     std::vector<double> NF;
     std::vector<double> N;

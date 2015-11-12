@@ -9,8 +9,8 @@
 fullStabilizer::fullStabilizer()
 {
     /* tunning parameter, should be consistent with invG*/
-    this->Nu=1;
-    this->N2=30;
+    this->Nu=7;
+    this->N2=20;
     this->alfa=0;
     this->controlFlag=0;
     constraints=0;
@@ -18,7 +18,7 @@ fullStabilizer::fullStabilizer()
     std::string FILEH="invHfull.txt";
     std::string FILEF="Ffull.txt";
 
-    this->m=90;
+    this->m=120;
     this->g=9.81;
     this->z_c=1;
     this->sampletime=0.005;
@@ -48,7 +48,7 @@ fullStabilizer::fullStabilizer()
     this->Dmpc.resize(this->sizeD);
     /*TF IN discrete time for a second order integrator with I*/
     this->Ampc<<1, -2, 1;
-    this->Bmpc<<0,0.00004022 ,-0.00003960;
+    this->Bmpc<<0,0.00001341 ,-0.0000132;
     //this->Bmpc<<0,pow(sampletime,2)/2,pow(sampletime,2)/2;
     /*LOW PASS FILTER (
      *
@@ -60,6 +60,8 @@ fullStabilizer::fullStabilizer()
 //    this->Dmpc<<1.0000,-1.7828,0.8141;
     this->Cmpc<< 0.4208 ,0 ,-0.4208;
     this->Dmpc<<1,-0.8416,0.1584;
+//    this->Cmpc<< 0,-1;
+//    this->Dmpc<<1,-2,1;
 
 
     /*Initializations*/
@@ -89,6 +91,8 @@ fullStabilizer::fullStabilizer()
 
     this->freq=20;
     this->initfilters();
+    this->counts=10;
+    this->spline.resize(this->counts);
 }
 /**
  * @brief integralCtrl::integralCtrl
@@ -101,65 +105,65 @@ fullStabilizer::fullStabilizer()
 fullStabilizer::fullStabilizer(double LQRgains[2],double sampleTime,std::string FILEG,std::string FILEH,std::string FILEF)
 {
 
-    this->sampletime=sampleTime;
-    this->LQRgains[1]=LQRgains[1];
-    this->LQRgains[0]=LQRgains[0];
-    /*SS description in discrate form*/
-    this->A<<1,this->sampletime,0,this->sampletime;
-    this->B<<pow(this->sampletime,2)/2,this->sampletime;
+//    this->sampletime=sampleTime;
+//    this->LQRgains[1]=LQRgains[1];
+//    this->LQRgains[0]=LQRgains[0];
+//    /*SS description in discrate form*/
+//    this->A<<1,this->sampletime,0,this->sampletime;
+//    this->B<<pow(this->sampletime,2)/2,this->sampletime;
 
-    /*******************************/
-    /*MPC VARIABLES*/
-    /*SYSTEM AND FILTER TRANSFER FUCNTION (TF) LENGHTS*/
-    this->sizeA=3;
-    this->sizeB=3;
-    this->sizeC=3;
-    this->sizeD=3;
+//    /*******************************/
+//    /*MPC VARIABLES*/
+//    /*SYSTEM AND FILTER TRANSFER FUCNTION (TF) LENGHTS*/
+//    this->sizeA=3;
+//    this->sizeB=3;
+//    this->sizeC=3;
+//    this->sizeD=3;
 
-    this->Ampc.resize(this->sizeA);
-    this->Bmpc.resize(this->sizeB);
-    this->Cmpc.resize(this->sizeC);
-    this->Dmpc.resize(this->sizeD);
-    /*TF IN discrete time for a second order integrator*/
-    this->Ampc<<1, -2, 1;
-    this->Bmpc<<0,pow(sampletime,2)/2,pow(sampletime,2)/2;
-    /*LOW PASS FILTER (
-     *
-     * [H,I]=butter(1,[0.001 0.9])
-     *
-     * )*/
-    this->Cmpc<<0.8621,0,-0.8621;
-    this->Dmpc<<1.0000,-0.2704,-0.7241;
-    /* tunning parameter, should be consistent with invG*/
-    this->Nu=7;
-    this->N2=20;
-    this->alfa=0;
-    /*Initializations*/
-    this->X.resize(N2+sizeA+1)    ;
-    this->U.resize(N2+sizeB+1)    ;
-    this->NF.resize(N2+sizeC+1)    ;
-    this->N.resize(N2+sizeD+1)    ;
+//    this->Ampc.resize(this->sizeA);
+//    this->Bmpc.resize(this->sizeB);
+//    this->Cmpc.resize(this->sizeC);
+//    this->Dmpc.resize(this->sizeD);
+//    /*TF IN discrete time for a second order integrator*/
+//    this->Ampc<<1, -2, 1;
+//    this->Bmpc<<0,pow(sampletime,2)/2,pow(sampletime,2)/2;
+//    /*LOW PASS FILTER (
+//     *
+//     * [H,I]=butter(1,[0.001 0.9])
+//     *
+//     * )*/
+//    this->Cmpc<<0.8621,0,-0.8621;
+//    this->Dmpc<<1.0000,-0.2704,-0.7241;
+//    /* tunning parameter, should be consistent with invG*/
+//    this->Nu=7;
+//    this->N2=20;
+//    this->alfa=0;
+//    /*Initializations*/
+//    this->X.resize(N2+sizeA+1)    ;
+//    this->U.resize(N2+sizeB+1)    ;
+//    this->NF.resize(N2+sizeC+1)    ;
+//    this->N.resize(N2+sizeD+1)    ;
 
-    this->invG.resize(Nu,N2);
-    this->invH.resize(Nu,Nu);
-    this->F.resize(Nu,N2);
+//    this->invG.resize(Nu,N2);
+//    this->invH.resize(Nu,Nu);
+//    this->F.resize(Nu,N2);
 
-    this->importGmatrix(FILEG,FILEH,FILEF);
+//    this->importGmatrix(FILEG,FILEH,FILEF);
 
-    this->ConstraintB.resize(2*Nu+2*Nu+2*N2);
-    this->ConstraintA.resize(2*Nu+2*Nu+2*N2,Nu);
+//    this->ConstraintB.resize(2*Nu+2*Nu+2*N2);
+//    this->ConstraintA.resize(2*Nu+2*Nu+2*N2,Nu);
 
-    this->ConstraintA.block(0,0,Nu,Nu)=MatrixXd::Identity(Nu,Nu);
-    this->ConstraintA.block(Nu,0,Nu,Nu)=-MatrixXd::Identity(Nu,Nu);
+//    this->ConstraintA.block(0,0,Nu,Nu)=MatrixXd::Identity(Nu,Nu);
+//    this->ConstraintA.block(Nu,0,Nu,Nu)=-MatrixXd::Identity(Nu,Nu);
 
-    this->ConstraintA.block(2*Nu,0,Nu,Nu)=MatrixXd::Identity(Nu,Nu);
-    this->ConstraintA.block(3*Nu,0,Nu,Nu)=-MatrixXd::Identity(Nu,Nu);
+//    this->ConstraintA.block(2*Nu,0,Nu,Nu)=MatrixXd::Identity(Nu,Nu);
+//    this->ConstraintA.block(3*Nu,0,Nu,Nu)=-MatrixXd::Identity(Nu,Nu);
 
-    this->ConstraintA.block(4*Nu,0,N2,Nu)=this->F.transpose();
-    this->ConstraintA.block(4*Nu+N2,0,N2,Nu)=-this->F.transpose();
+//    this->ConstraintA.block(4*Nu,0,N2,Nu)=this->F.transpose();
+//    this->ConstraintA.block(4*Nu+N2,0,N2,Nu)=-this->F.transpose();
 
-    this->freq=20;
-    this->initfilters();
+//    this->freq=20;
+//    this->initfilters();
 
 }
 fullStabilizer::~fullStabilizer(){}
@@ -401,6 +405,11 @@ void fullStabilizer::MPC(double Yt,double *Wt){
             }
         }
         U[N2]=U[N2]+Uopt[0];
+        double Umax=100;
+        if(U[N2]>Umax)
+            U[N2]=Umax;
+        else if(U[N2]<-Umax)
+            U[N2]=-Umax;
         return;
     }
 }
@@ -414,6 +423,9 @@ void fullStabilizer::MPC(double Yt,double *Wt){
 double fullStabilizer::applyControl(Vector2d States,double controlEffort){
     Vector2d temporal=this->A*States+this->B*controlEffort;
     //double output=this->C(0)*temporal(0)+this->C(1)*temporal(1);
+    for(int i=1;i<this->spline.size()+1;i++){
+        this->spline(i-1)=States(0)+(temporal(0)-States(0))*i/this->spline.size();
+    }
     this->States=temporal;
     return temporal(0);
 
@@ -428,7 +440,7 @@ double fullStabilizer::applyControl(Vector2d States,double controlEffort){
  */
 double fullStabilizer::apply(double *ref){
     if (this->controlFlag==0){
-        return this->LQRcontroller(this->States,ref[0]);
+        return this->LQRcontroller(this->States,ref[this->Nu]);
     }
     else{
         double CP=this->C(0)*States(0)+this->C(1)*States(1);
