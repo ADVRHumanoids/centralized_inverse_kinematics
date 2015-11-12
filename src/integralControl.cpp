@@ -63,7 +63,7 @@ IntegralControl::IntegralControl()
     /* tunning parameter, should be consistent with invG*/
     this->Nu=4;
     this->N2=10;
-    this->alfa=0;
+    this->alfa=.95;
     this->controlFlag==0;
     /*Initializations*/
     this->X.resize(N2+sizeA+1)    ;
@@ -116,7 +116,7 @@ IntegralControl::IntegralControl(double LQRgains[2],double sampleTime,std::strin
     /*SYSTEM AND FILTER TRANSFER FUCNTION (TF) LENGHTS*/
     this->sizeA=3;
     this->sizeB=3;
-    this->sizeC=3;
+    this->sizeC=2;
     this->sizeD=3;
 
     this->Ampc.resize(this->sizeA);
@@ -131,8 +131,10 @@ IntegralControl::IntegralControl(double LQRgains[2],double sampleTime,std::strin
      * [H,I]=butter(1,[0.001 0.9])
      *
      * )*/
-    this->Cmpc<<0.1246,0,-0.1246;
-    this->Dmpc<<1.0000,-1.7421 ,0.7508;
+//     this->Cmpc<<0.1246,0,-0.1246;
+//     this->Dmpc<<1.0000,-1.7421 ,0.7508;
+    this->Cmpc<<0,1;
+    this->Dmpc<<1.0000,-2,1;
     /* tunning parameter, should be consistent with invG*/
     this->Nu=7;
     this->N2=10;
