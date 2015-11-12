@@ -43,7 +43,6 @@ FIND_PACKAGE(YARP REQUIRED)
 FIND_PACKAGE(idynutils REQUIRED)
 FIND_PACKAGE(GYM REQUIRED)
 FIND_PACKAGE(paramHelp REQUIRED)
-FIND_PACKAGE(kdl_codyco REQUIRED)
 FIND_PACKAGE(iDynTree REQUIRED)
 FIND_PACKAGE(PCL 1.7 REQUIRED)
 FIND_PACKAGE(OpenSoT REQUIRED)
@@ -56,7 +55,7 @@ INCLUDE_DIRECTORIES(include
 		    ${YARP_INCLUDE_DIRS} 
 		    ${idynutils_INCLUDE_DIRS}
 		    ${GYM_INCLUDE_DIRS}
-		    ${kdl_codyco_INCLUDE_DIRS} 
+		    ${iDynTree_INCLUDE_DIRS} 
                     ${PCL_INCLUDE_DIRS}
                     ${OpenSoT_INCLUDE_DIRS}
                     ${roscpp_INCLUDE_DIRS}
