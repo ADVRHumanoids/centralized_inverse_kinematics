@@ -292,8 +292,8 @@ boost::shared_ptr<walking_problem::ik_problem> walking_problem::homing_problem(c
     taskPostural.reset(new Postural(state));
     yarp::sig::Vector q_postural(state.size(), 0.0);
     q_postural = state;
-    q_postural[robot_model.left_leg.joint_numbers[3]] = 10.0*M_PI/180.0;
-    q_postural[robot_model.right_leg.joint_numbers[3]] = 10.0*M_PI/180.0;
+//     q_postural[robot_model.left_leg.joint_numbers[3]] = 10.0*M_PI/180.0;
+//     q_postural[robot_model.right_leg.joint_numbers[3]] = 10.0*M_PI/180.0;
 //    q_postural[robot_model.left_arm.joint_numbers[3]] = -20.0*M_PI/180.0;
 //    q_postural[robot_model.right_arm.joint_numbers[3]] = -20.0*M_PI/180.0;
 //    q_postural[robot_model.left_arm.joint_numbers[0]] = 5.0*M_PI/180.0;
