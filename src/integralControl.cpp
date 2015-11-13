@@ -56,8 +56,8 @@ IntegralControl::IntegralControl()
 //    this->Cmpc<<0,1;
 //    this->Dmpc<<1,-2,1;
 
-    this->Cmpc<<0.2742,0,-0.2742;
-    this->Dmpc<<1,-0.5485, 0.4515;
+    this->Cmpc<< 0.8173 ,-1.5372,0.8173;
+    this->Dmpc<<1,-1.5372 ,0.6346;
 //    this->Cmpc<< 0,1;
 //    this->Dmpc<<1,-2,1;
     /* tunning parameter, should be consistent with invG*/

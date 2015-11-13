@@ -18,7 +18,7 @@ fullStabilizer::fullStabilizer()
     std::string FILEH="invHfull.txt";
     std::string FILEF="Ffull.txt";
 
-    this->m=120;
+    this->m=80;
     this->g=9.81;
     this->z_c=1;
     this->sampletime=0.005;
@@ -48,7 +48,7 @@ fullStabilizer::fullStabilizer()
     this->Dmpc.resize(this->sizeD);
     /*TF IN discrete time for a second order integrator with I*/
     this->Ampc<<1, -2, 1;
-    this->Bmpc<<0,0.00001341 ,-0.0000132;
+    this->Bmpc<<0,0.00002011 ,-0.0000198;
     //this->Bmpc<<0,pow(sampletime,2)/2,pow(sampletime,2)/2;
     /*LOW PASS FILTER (
      *
@@ -58,8 +58,8 @@ fullStabilizer::fullStabilizer()
     double k=0.1;
 //    this->Cmpc<< 0.0929 , 0 ,-0.0929;
 //    this->Dmpc<<1.0000,-1.7828,0.8141;
-    this->Cmpc<< 0.4208 ,0 ,-0.4208;
-    this->Dmpc<<1,-0.8416,0.1584;
+    this->Cmpc<< 0.8173 ,-1.5372,0.8173;
+    this->Dmpc<<1,-1.5372 ,0.6346;
 //    this->Cmpc<< 0,-1;
 //    this->Dmpc<<1,-2,1;
 

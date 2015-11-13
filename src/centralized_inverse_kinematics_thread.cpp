@@ -123,11 +123,22 @@ void centralized_inverse_kinematics_thread::run()
 {
     double tic = yarp::os::Time::now();
 
+
     if(ik_problem && qp_solver)
     {
         /** Sense **/
         RobotUtils::ftReadings ft_readings = robot.senseftSensors();
+
+        std::vector<double> comInfo(6);
+        comInfo = ik_problem->comStabilizer.filterdata(
+                    _robot_real.iDyn3_model.getCOM()[0],
+                    _robot_real.iDyn3_model.getCOM()[1], get_thread_period());
+
+        std::vector<double> filterAngPitch(2,0);
+        std::vector<double> filterAngRoll(2,0);
         yarp::sig::Vector imu = imuIFace->sense();
+        filterAngPitch = ik_problem->controlPitch.filterdata2(imu(1), imu(7));
+        filterAngRoll = ik_problem->controlRoll.filterdata2(imu(0), imu(6));
 
         ik_problem->controlPitch.controlFlag = 1;
         ik_problem->controlRoll.controlFlag = 1;
@@ -136,24 +147,18 @@ void centralized_inverse_kinematics_thread::run()
         ik_problem->comStabilizery.controlFlag=1;
 
 
-        std::vector<double> filterAngPitch(2,0);
-        std::vector<double> filterAngRoll(2,0);
-
-        filterAngPitch = ik_problem->controlPitch.filterdata2(imu(1), imu(7));
-        filterAngRoll = ik_problem->controlRoll.filterdata2(imu(0), imu(6));
         ik_problem->controlPitch.States<<filterAngPitch[0],filterAngPitch[1];
         ik_problem->controlRoll.States<<filterAngRoll[0],filterAngRoll[1];
         double refPitch[ik_problem->controlPitch.Nu];
         double refRoll[ik_problem->controlPitch.Nu];
         for(unsigned i=0;i<ik_problem->controlPitch.Nu;i++){
-            refPitch[i]=ik_problem->controlPitch.offset-i*ik_problem->controlPitch.offset/ik_problem->controlPitch.Nu;
+            refPitch[i]=0;
             refRoll[i]=0;
         }
-        Matrix3d Hiprotation = Matrix3d::Identity();
 
         Matrix3d Hiprotation = Matrix3d::Identity();
         Hiprotation = Ry(ik_problem->controlPitch.apply(refPitch));
-     //   Hiprotation=Hiprotation*Rx(ik_problem->controlRoll.apply(refRoll));
+        Hiprotation=Hiprotation*Rx(ik_problem->controlRoll.apply(refRoll));
         yarp::sig::Vector q_measured(_q.size(), 0.0);
         robot.sense(q_measured, _dq, _tau);
         if(_is_clik)
@@ -194,11 +199,7 @@ void centralized_inverse_kinematics_thread::run()
             double hipcontroly = 0.0;
 
             Vector3d hipOffset;
-            std::vector<double> comInfo(6);
             double fgcom[3], fgcomy[3];
-            comInfo = ik_problem->comStabilizer.filterdata(
-                        _robot_real.iDyn3_model.getCOM()[0],
-                        _robot_real.iDyn3_model.getCOM()[1], get_thread_period());
             for(unsigned int i = 0; i < 3; ++i){
                 fgcom[i] = comInfo[i];
                 fgcomy[i] = comInfo[i+3];
@@ -207,50 +208,23 @@ void centralized_inverse_kinematics_thread::run()
             ik_problem->comStabilizery.States<<comInfo[3], comInfo[4];
 
             for(unsigned int i = 0; i < ik_problem->comStabilizer.Nu; ++i)
-                comRef[i] = ik_problem->comStabilizer.offset-i*(ik_problem->comStabilizer.offset)/ik_problem->comStabilizer.Nu;
+                comRef[i] = ik_problem->comStabilizer.offset;
             for(unsigned int i = 0; i < ik_problem->comStabilizery.Nu; ++i)
-                comRefy[i] = 0.0;
+                comRefy[i] = ik_problem->comStabilizery.offset ;
             Vector3d COMvector(0.0, 0.0, 0.35);
-            hipOffset = ik_problem->controlPitch.DynamicCompensator(Hiprotation, COMvector, 50, 40);
-            cout<<"angle"<<imu(1)<<"    "<<"compensation"<<hipOffset[0]<<endl;
+            hipOffset = ik_problem->controlPitch.DynamicCompensator(Hiprotation, COMvector, 80, 20);
             hipcontrol =ik_problem->comStabilizer.apply(comRef)*0.8;
-           // hipcontroly = ik_problem->comStabilizery.apply(comRefy);
+            hipcontroly = ik_problem->comStabilizery.apply(comRefy)*0.8;
 
             double CoMdx = hipcontrol + hipOffset[0];
             double CoMdy = hipcontroly + hipOffset[1];
 
             yarp::sig::Vector CoMd = ik_problem->taskCoM->getReference();
             CoMd(0) = CoMdx;
-           // CoMd(1) = CoMdy;
+            //CoMd(1) = CoMdy;
             ik_problem->taskCoM->setReference(CoMd);
 
-//            if(ik_problem->updateWalkingPattern(ik_problem->LFootRef, ik_problem->RFootRef,
-//                                                ik_problem->pelvisRef, ik_problem->comRef,
-//                                                ik_problem->ZMPRef,
-//                                                stance_foot))
-//            {
-//                if(!ik_problem->walking_pattern_finished)
-//                {
-//                    ik_problem->switchSupportFoot(robot.idynutils, stance_foot);
-
-//                    ik_problem->taskLFoot->setReference(ik_problem->LFootRef);
-//                    ik_problem->taskRFoot->setReference(ik_problem->RFootRef);
-//                    ik_problem->taskPelvis->setReference(ik_problem->pelvisRef);
-//                    ik_problem->taskCoM->setReference(ik_problem->comRef);
-
-////                    yarp::sig::Matrix RArmRef = ik_problem->InitialRArmRef;
-////                    RArmRef(0,3) = RArmRef(0,3) - 0.4 + 0.4*cos(_counter/100.0);
-////                    RArmRef(1,3) = RArmRef(1,3) -0.4 + 0.4*cos(_counter/100.0);
-////                    yarp::sig::Vector dRArmRef(6, 0.0);
-////                    dRArmRef(0) = -(0.4/100.0)*sin(_counter/100.0);
-////                    dRArmRef(1) = -(0.4/100.0)*sin(_counter/100.0);
-////                    ik_problem->taskRArm->setReference(RArmRef, dRArmRef);
-////                    _counter++;
-//                }
-//            }
-//            else
-//                ROS_WARN_ONCE("WALKING PATTERN GENERATOR RETURN ERROR OR FINISHED!");
-        }
+         }
 
         /** Update OpenSoTServer **/
         ik_problem->update(_q);
@@ -269,13 +243,23 @@ void centralized_inverse_kinematics_thread::run()
                                                               main_problem->damped_least_square_eps));
             ik_problem->reset_solver = true;
 
-            ik_problem->comStabilizer.offset = _robot_real.iDyn3_model.getCOM()[0];
-            ik_problem->comStabilizery.offset = _robot_real.iDyn3_model.getCOM()[1];
+            for(int i=0;i<10;i++){
+                comInfo = ik_problem->comStabilizer.filterdata(
+                            _robot_real.iDyn3_model.getCOM()[0],
+                            _robot_real.iDyn3_model.getCOM()[1], get_thread_period());
+                filterAngPitch = ik_problem->controlPitch.filterdata2(imu(1), imu(7));
+                filterAngRoll = ik_problem->controlRoll.filterdata2(imu(0), imu(6));
+            }
+
+            ik_problem->comStabilizer.offset = comInfo[0];
+            ik_problem->comStabilizery.offset = comInfo[3];
             for(int i=0;i<ik_problem->comStabilizer.N2+ik_problem->comStabilizer.sizeA+1;i++){
                 ik_problem->comStabilizer.X[i]=ik_problem->comStabilizer.offset;
                 ik_problem->comStabilizery.X[i]=ik_problem->comStabilizery.offset;
             }
-            ik_problem->controlPitch.offset=imu(1);
+            ik_problem->controlPitch.offset=filterAngPitch[0];
+            ik_problem->controlRoll.offset=filterAngRoll[0];
+
         }
 
         _dq_ref = 0.0;
