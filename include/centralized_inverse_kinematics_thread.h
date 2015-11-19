@@ -44,6 +44,9 @@ private:
 
     iDynUtils _robot_real;
     
+    // LOG
+    std::vector<double> log_data;
+    
 public:
     //boost::shared_ptr<simple_problem> ik_problem;
     //boost::shared_ptr<interaction_problem> ik_problem;
@@ -71,7 +74,7 @@ public:
      */
     virtual bool custom_init();
 
-     void custom_release();
+    void custom_release();
     
     /**
      * @brief centralized_inverse_kinematics control thread main loop

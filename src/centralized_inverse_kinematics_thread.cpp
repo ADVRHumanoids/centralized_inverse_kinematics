@@ -6,6 +6,8 @@
 #include <OpenSoT/tasks/velocity/Interaction.h>
 #include <MatrixVector.h>
 
+#define LOG_DATA_SIZE 8
+
 using namespace OpenSoT::tasks::velocity;
 
 centralized_inverse_kinematics_thread::centralized_inverse_kinematics_thread(   std::string module_prefix, 
@@ -117,6 +119,23 @@ void centralized_inverse_kinematics_thread::custom_release()
     ik_problem.reset();
     ROS_INFO("Problem reset!");
     _dq_ref = 0.0;
+    
+    ROS_INFO("Savin LOG DATA!");
+    std::cout << (log_data.size()) << std::endl;
+    
+    std::ofstream output_file("./test_log_data" + std::to_string(ros::Time::now().toSec()) + ".dat");
+//     std::ostream_iterator<double> output_iterator(output_file, "\n");
+//     std::copy(log_data.begin(), log_data.end(), output_iterator);
+    if (output_file.is_open()) {
+        for(int i = 0; i < log_data.size(); i += LOG_DATA_SIZE) {
+            for(int j = 0; j < LOG_DATA_SIZE; j++) {
+                output_file << log_data[i+j]   << " ";
+            }
+            output_file << "\n";
+        }
+        output_file.close();
+    }
+
 }
 
 void centralized_inverse_kinematics_thread::run()
@@ -222,7 +241,17 @@ void centralized_inverse_kinematics_thread::run()
             yarp::sig::Vector CoMd = ik_problem->taskCoM->getReference();
             CoMd(0) = CoMdx;
             //CoMd(1) = CoMdy;
-            ik_problem->taskCoM->setReference(CoMd);
+            //ik_problem->taskCoM->setReference(CoMd);
+	    
+	    // LOG DATA
+	    log_data.push_back(comInfo[0]);
+	    log_data.push_back(comInfo[4]);
+	    log_data.push_back(filterAngPitch[0]);
+	    log_data.push_back(filterAngRoll[0]);
+            log_data.push_back(_robot_real.iDyn3_model.getCOM()[0]);
+            log_data.push_back(_robot_real.iDyn3_model.getCOM()[1]);
+            log_data.push_back(imu[0]);
+            log_data.push_back(imu[1]);
 
          }
 
