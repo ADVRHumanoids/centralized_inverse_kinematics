@@ -59,6 +59,8 @@ public:
     VectorXd spline;
     double counts;
     std::vector<double> X    ;
+    int sizeA;
+
 private:
     //SS discrete system
     Matrix2d A;
@@ -71,7 +73,6 @@ private:
     double LQRgains[2];
     double sampletime;
 
-    int sizeA;
     int sizeB;
     int sizeC;
     int sizeD;

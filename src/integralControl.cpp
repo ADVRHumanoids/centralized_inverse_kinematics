@@ -50,21 +50,20 @@ IntegralControl::IntegralControl()
      * [H,I]=butter(1,[0.001 0.9])
      *
      * )*/
-//    this->Cmpc<<0.1234,0,-0.1234;
-//    this->Dmpc<<1.0000,-1.7525,    0.7533;
+    this->Cmpc<<0.1367     ,    0 ,  -0.1367;
+    this->Dmpc<<1.0000  , -1.2361 ,   0.7265;
 
 //    this->Cmpc<<0,1;
 //    this->Dmpc<<1,-2,1;
 
-    this->Cmpc<< 0.8173 ,-1.5372,0.8173;
-    this->Dmpc<<1,-1.5372 ,0.6346;
-//    this->Cmpc<< 0,1;
-//    this->Dmpc<<1,-2,1;
+//    this->Cmpc<< 0.8173 ,-1.5372,0.8173;
+//    this->Dmpc<<1,-1.5372 ,0.6346;
+
     /* tunning parameter, should be consistent with invG*/
-    this->Nu=4;
-    this->N2=10;
+    this->Nu=1;
+    this->N2=20;
     this->alfa=0;
-    this->controlFlag==0;
+    this->controlFlag=0;
     /*Initializations*/
     this->X.resize(N2+sizeA+1)    ;
     this->U.resize(N2+sizeB+1)    ;
@@ -88,7 +87,7 @@ IntegralControl::IntegralControl()
     this->ConstraintA.block(2*N2,0,N2,Nu)=this->F.transpose();
     this->ConstraintA.block(3*N2,0,N2,Nu)=-this->F.transpose();
 
-    this->freq=50;
+    this->freq=20;
     this->TsCart=0.005;
     this->initfilters();
 
@@ -314,7 +313,7 @@ void IntegralControl::MPC(double Yt,double *Wt){
     for(k=N2-1;k>=0;k--){
         Ybase[N2-1-k]=N[k]+X[k];
     }
-    X[N2]=Yt; // SERIE-PARALELO
+    //X[N2]=Yt; // SERIE-PARALELO
     // 7= New control input U=U+ inv(G'*G)*G'*Err
     double Ref[N2+1];
     Ref[0]=Yt;
@@ -343,7 +342,7 @@ void IntegralControl::MPC(double Yt,double *Wt){
             }
         }
         U[N2]=U[N2]+Uopt[0];
-        double Umax=100;
+        double Umax=10;
         if(U[N2]>Umax)
             U[N2]=Umax;
         else if(U[N2]<-Umax)
@@ -361,6 +360,7 @@ void IntegralControl::MPC(double Yt,double *Wt){
  */
 double IntegralControl::applyControl(Vector2d States,double controlEffort){
     Vector2d temporal=this->A*States+this->B*controlEffort;
+    this->States=temporal;
     return temporal(0);
 }
 /**

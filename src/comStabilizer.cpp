@@ -175,9 +175,9 @@ fullStabilizer::~fullStabilizer(){}
  * @return desire state X (k+1)
  */
 void fullStabilizer::initfilters(){
-    Filterx.butterworth     (this->sampletime,this->freq*0.5,3);
-    Filterdx.butterworth    (this->sampletime,this->freq*0.5,3);
-    Filterddx.butterworth   (this->sampletime,this->freq*0.5,3);
+    Filterx.butterworth     (this->sampletime,this->freq*1,3);
+    Filterdx.butterworth    (this->sampletime,this->freq*1,3);
+    Filterddx.butterworth   (this->sampletime,this->freq*1,3);
     Filtery.butterworth     (this->sampletime,this->freq*1,1);
     Filterdy.butterworth    (this->sampletime,this->freq*1,1);
     Filterddy.butterworth   (this->sampletime,this->freq*1,3);
@@ -200,7 +200,7 @@ std::vector<double> fullStabilizer::filterdata(double gcomx,double gcomy,double 
 
     gcom_oldy    = this->Fgcomy[0];
     gdcom_oldy    = this->Fgcomy[1];
-    this->Fgcomy[0]    = gcomy;    // gcom is the estimated COM in world coordinate
+    this->Fgcomy[0]    = Filtery.applyFilter(gcomy);;    // gcom is the estimated COM in world coordinate
     double speedy    = (this->Fgcomy[0]-gcom_oldy)/TsCart;
 
     this->Fgcomx[1]=speedx;
@@ -216,7 +216,7 @@ std::vector<double> fullStabilizer::filterdata(double gcomx,double gcomy,double 
     returnvector[1]   = Filterdx.applyFilter  (this->Fgcomx[1]);
     returnvector[2]   = Filterddx.applyFilter (this->Fgcomx[2]);
 
-    returnvector[3]   = Filtery.applyFilter   (gcomy); // gcom is the estimated COM in world coordinate
+    returnvector[3]   = this->Fgcomy[0]; // gcom is the estimated COM in world coordinate
     returnvector[4]   = Filterdy.applyFilter  (this->Fgcomy[1]);
     returnvector[5]   = Filterddy.applyFilter (this->Fgcomy[2]);
 
