@@ -50,17 +50,15 @@ IntegralControl::IntegralControl()
      * [H,I]=butter(1,[0.001 0.9])
      *
      * )*/
-    this->Cmpc<<0.1367     ,    0 ,  -0.1367;
-    this->Dmpc<<1.0000  , -1.2361 ,   0.7265;
+//    this->Cmpc<<0.1367     ,    0 ,  -0.1367;
+//    this->Dmpc<<1.0000  , -1.2361 ,   0.7265;
 
-//    this->Cmpc<<0,1;
-//    this->Dmpc<<1,-2,1;
+    this->Cmpc<<0.0976  ,  0.1953   , 0.0976;
+    this->Dmpc<<1.0000  , -0.9428 ,   0.3333;
 
-//    this->Cmpc<< 0.8173 ,-1.5372,0.8173;
-//    this->Dmpc<<1,-1.5372 ,0.6346;
 
     /* tunning parameter, should be consistent with invG*/
-    this->Nu=1;
+    this->Nu=7;
     this->N2=20;
     this->alfa=0;
     this->controlFlag=0;
@@ -87,7 +85,7 @@ IntegralControl::IntegralControl()
     this->ConstraintA.block(2*N2,0,N2,Nu)=this->F.transpose();
     this->ConstraintA.block(3*N2,0,N2,Nu)=-this->F.transpose();
 
-    this->freq=20;
+    this->freq=50;
     this->TsCart=0.005;
     this->initfilters();
 
