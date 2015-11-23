@@ -170,9 +170,9 @@ void centralized_inverse_kinematics_thread::run()
 
         ik_problem->controlPitch.States<<filterAngPitch[0],filterAngPitch[1];
         ik_problem->controlRoll.States<<filterAngRoll[0],filterAngRoll[1];
-        double refPitch[ik_problem->controlPitch.Nu];
-        double refRoll[ik_problem->controlPitch.Nu];
-        for(unsigned i=0;i<ik_problem->controlPitch.Nu;i++){
+        double refPitch[ik_problem->controlPitch.N2];
+        double refRoll[ik_problem->controlPitch.N2];
+        for(unsigned i=0;i<ik_problem->controlPitch.N2;i++){
             refPitch[i]=ik_problem->controlPitch.offset;
             refRoll[i]=ik_problem->controlRoll.offset;
         }
@@ -214,8 +214,8 @@ void centralized_inverse_kinematics_thread::run()
             }
             ik_problem->taskTorso->setReference(hipRef);
 
-            double comRef[ik_problem->comStabilizer.Nu];
-            double comRefy[ik_problem->comStabilizery.Nu];
+            double comRef[ik_problem->comStabilizer.N2];
+            double comRefy[ik_problem->comStabilizery.N2];
             double hipcontrol = 0.0;
             double hipcontroly = 0.0;
 
@@ -228,9 +228,9 @@ void centralized_inverse_kinematics_thread::run()
             ik_problem->comStabilizer.States<<comInfo[0],comInfo[1];
             ik_problem->comStabilizery.States<<comInfo[3], comInfo[4];
 
-            for(unsigned int i = 0; i < ik_problem->comStabilizer.Nu; ++i)
+            for(unsigned int i = 0; i < ik_problem->comStabilizer.N2; ++i)
                 comRef[i] = ik_problem->comStabilizer.offset;
-            for(unsigned int i = 0; i < ik_problem->comStabilizery.Nu; ++i)
+            for(unsigned int i = 0; i < ik_problem->comStabilizery.N2; ++i)
                 comRefy[i] = ik_problem->comStabilizery.offset;
             Vector3d COMvector(0.0, 0.0, 0.35);
             hipOffset = ik_problem->controlPitch.DynamicCompensator(Hiprotation, COMvector, 80, 20);

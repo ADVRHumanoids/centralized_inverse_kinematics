@@ -50,17 +50,17 @@ IntegralControl::IntegralControl()
      * [H,I]=butter(1,[0.001 0.9])
      *
      * )*/
-//    this->Cmpc<<0.1367     ,    0 ,  -0.1367;
-//    this->Dmpc<<1.0000  , -1.2361 ,   0.7265;
-
-    this->Cmpc<<0.0976  ,  0.1953   , 0.0976;
-    this->Dmpc<<1.0000  , -0.9428 ,   0.3333;
+    this->Cmpc<<0.1367     ,    0 ,  -0.1367;
+    this->Dmpc<<1.0000  , -1.2361 ,   0.7265;
+    double k=0.01;
+//    this->Cmpc<<0.0976  ,  0.1953   , 0.0976;
+//    this->Dmpc<<1.0000  , -0.9428 ,   0.3333;
 
 
     /* tunning parameter, should be consistent with invG*/
     this->Nu=7;
     this->N2=20;
-    this->alfa=0;
+    this->alfa=0.9;
     this->controlFlag=0;
     /*Initializations*/
     this->X.resize(N2+sizeA+1)    ;
@@ -71,7 +71,14 @@ IntegralControl::IntegralControl()
     this->invH.resize(Nu,Nu);
     this->F.resize(Nu,N2);
 
+    for(unsigned i=0;i<this->U.size();i++)
+        this->U[i]=0;
 
+    for(unsigned i=0;i<this->NF.size();i++)
+        this->NF[i]=0;
+
+    for(unsigned i=0;i<this->N.size();i++)
+        this->N[i]=0;
 
     this->importGmatrix(FILEG,FILEH,FILEF);
 
@@ -264,6 +271,7 @@ void IntegralControl::MPC(double Yt,double *Wt){
     }
     // 3= compute n(t)=y(t)-x(call) with x(call) the model output
     N[N2]=Yt-X[N2];
+
     // 4= compute nf(t)=D/C*n(call) and put nf(t+k/t)=0, k=1..N2
     double NF_d=0,NF_c=0;
     int j_d=0,j_c=0;
@@ -310,20 +318,21 @@ void IntegralControl::MPC(double Yt,double *Wt){
     // 6= calcula Ybase=X(N2-N1+1:-1:1)+N(N2-N1+1:-1:1); k=N1....N2
     for(k=N2-1;k>=0;k--){
         Ybase[N2-1-k]=N[k]+X[k];
+
     }
-    //X[N2]=Yt; // SERIE-PARALELO
+
+    X[N2]=Yt; // SERIE-PARALELO
     // 7= New control input U=U+ inv(G'*G)*G'*Err
     double Ref[N2+1];
     Ref[0]=Yt;
     for (k=0;k<N2;k++){
 
         Ref[k+1]=alfa*Ref[k]+(1-alfa)*Wt[k];
+
     }
     for(k=0;k<N2;k++){
         Err[k]=(Ref[k+1]-Ybase[k]);
     }
-
-
     if(this->constraints){
         VectorXd prueba;
         prueba=this->saturateMPC(Err,Ybase,U);
@@ -340,11 +349,13 @@ void IntegralControl::MPC(double Yt,double *Wt){
             }
         }
         U[N2]=U[N2]+Uopt[0];
-        double Umax=10;
+
+        double Umax=20;
         if(U[N2]>Umax)
             U[N2]=Umax;
         else if(U[N2]<-Umax)
             U[N2]=-Umax;
+
         return;
     }
 
@@ -374,6 +385,7 @@ double IntegralControl::apply(double *ref){
         return this->LQRcontroller(this->States,ref[this->Nu]);
     }
     else{
+
         this->MPC(States(0),ref);
         return this->applyControl(this->States,this->U[this->N2]);
     }
