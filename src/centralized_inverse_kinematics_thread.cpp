@@ -161,6 +161,8 @@ void centralized_inverse_kinematics_thread::run()
 
         ik_problem->controlPitch.controlFlag = 1;
         ik_problem->controlRoll.controlFlag = 1;
+        ik_problem->controlPitch.alfa=0.9;
+        ik_problem->controlRoll.alfa=0.9;
 
         ik_problem->comStabilizer.controlFlag=1;
         ik_problem->comStabilizery.controlFlag=1;
@@ -176,8 +178,8 @@ void centralized_inverse_kinematics_thread::run()
         }
 
         Matrix3d Hiprotation = Matrix3d::Identity();
-        Hiprotation = Ry(ik_problem->controlPitch.apply(refPitch));
-        Hiprotation=Hiprotation*Rx(ik_problem->controlRoll.apply(refRoll));
+        Hiprotation = Ry(ik_problem->controlPitch.apply(refPitch)*0.5);
+        Hiprotation=Hiprotation*Rx(ik_problem->controlRoll.apply(refRoll)*0.5);
         yarp::sig::Vector q_measured(_q.size(), 0.0);
         robot.sense(q_measured, _dq, _tau);
         if(_is_clik)
@@ -236,17 +238,13 @@ void centralized_inverse_kinematics_thread::run()
             hipcontroly = ik_problem->comStabilizery.apply(comRefy)-ik_problem->comStabilizery.offset;
 
             double CoMdx = hipcontrol + hipOffset[0];
-            double CoMdy = hipcontroly*0.8 + hipOffset[1];
+            double CoMdy = hipcontroly*0.5 + hipOffset[1];
 
             yarp::sig::Vector CoMd = ik_problem->taskCoM->getReference();
             CoMd(0) = CoMdx;
-           // CoMd(1) = ik_problem->comStabilizery.offsety-CoMdy;
+            //CoMd(1) = ik_problem->comStabilizery.offsety-CoMdy;
             ik_problem->taskCoM->setReference(CoMd);
-            cout<<"IKref "<<CoMd(1)<<"\n  "
-                <<"Ref t+1 "<<CoMdy<<"\n "
-                //<<"Feedback"<<CoMdy<<"\n"
-                <<"0?: "<< comInfo[3]-ik_problem->comStabilizery.offset
-               <<endl;
+
         // LOG DATA
 //	    log_data.push_back(comInfo[0]);
 //	    log_data.push_back(comInfo[4]);
