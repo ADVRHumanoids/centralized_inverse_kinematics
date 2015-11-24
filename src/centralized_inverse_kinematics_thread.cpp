@@ -249,14 +249,14 @@ void centralized_inverse_kinematics_thread::run()
             ik_problem->taskCoM->setReference(CoMd);
 
         // LOG DATA
-//	    log_data.push_back(comInfo[0]);
-//	    log_data.push_back(comInfo[4]);
-//	    log_data.push_back(filterAngPitch[0]);
-//	    log_data.push_back(filterAngRoll[0]);
-//            log_data.push_back(_robot_real.iDyn3_model.getCOM()[0]);
-//            log_data.push_back(_robot_real.iDyn3_model.getCOM()[1]);
-//            log_data.push_back(imu[0]);
-//            log_data.push_back(imu[1]);
+        log_data.push_back(comInfo[0]);
+        log_data.push_back(comInfo[4]);
+        log_data.push_back(filterAngPitch[0]);
+        log_data.push_back(filterAngRoll[0]);
+            log_data.push_back(_robot_real.iDyn3_model.getCOM()[0]);
+            log_data.push_back(_robot_real.iDyn3_model.getCOM()[1]);
+            log_data.push_back(imu[0]);
+            log_data.push_back(imu[1]);
 
          }
 
