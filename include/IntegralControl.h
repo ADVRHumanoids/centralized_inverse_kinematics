@@ -61,6 +61,7 @@ public:
     std::vector<double> X    ;
     int sizeA;
 
+    double filterstate(double x);
 private:
     //SS discrete system
     Matrix2d A;
@@ -69,6 +70,8 @@ private:
     double freq;
     FilterH Filteralfa;
     FilterH Filteralfad;
+    FilterH outFilter;
+    FilterH stateFilter;
     double controleffort;
     double LQRgains[2];
     double sampletime;
@@ -99,6 +102,8 @@ private:
     VectorXd ConstraintB;
     MatrixXd ConstraintA;
     MatrixXd invG;
+
+    double filterout();
 
     double LQRcontroller(Vector2d States,double reference);
     void importGmatrix(std::string FILEG,std::string FILEH,std::string FILEF);

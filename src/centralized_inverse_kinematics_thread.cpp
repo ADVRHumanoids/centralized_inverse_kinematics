@@ -181,7 +181,6 @@ void centralized_inverse_kinematics_thread::run()
         double Pitch=ik_problem->controlPitch.apply(refPitch);
         //double Roll=ik_problem->controlRoll.apply(refRoll)*0.5;
         Hiprotation = Ry(Pitch);
-        cout<<Pitch<<" ";
         //Hiprotation=Hiprotation*Rx(Roll);
         yarp::sig::Vector q_measured(_q.size(), 0.0);
         robot.sense(q_measured, _dq, _tau);
@@ -283,6 +282,8 @@ void centralized_inverse_kinematics_thread::run()
                             _robot_real.iDyn3_model.getCOM()[1], get_thread_period());
                 filterAngPitch = ik_problem->controlPitch.filterdata2(imu(1), imu(7));
                 filterAngRoll = ik_problem->controlRoll.filterdata2(imu(0), imu(6));
+                double temporal=ik_problem->controlRoll.filterstate(imu(0));
+                temporal=ik_problem->controlPitch.filterstate(imu(1));
             }
 
             ik_problem->comStabilizer.offset = comInfo[0];

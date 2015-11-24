@@ -53,8 +53,8 @@ IntegralControl::IntegralControl()
 //    this->Cmpc<<0.1367     ,    0 ,  -0.1367;
 //    this->Dmpc<<1.0000  , -1.2361 ,   0.7265;
 //    double k=0.01;
-    this->Cmpc<<0,1;
-    this->Dmpc<<1.0000  , -1;
+    this->Cmpc<<0.0155 ,   0.0155;
+    this->Dmpc<<1.0000  , -0.9691;
 
 
     /* tunning parameter, should be consistent with invG*/
@@ -94,7 +94,7 @@ IntegralControl::IntegralControl()
 //    this->ConstraintA.block(2*N2,0,N2,Nu)=this->F.transpose();
 //    this->ConstraintA.block(3*N2,0,N2,Nu)=-this->F.transpose();
 
-    this->freq=50;
+    this->freq=10;
     this->TsCart=0.005;
     this->initfilters();
 
@@ -166,8 +166,14 @@ IntegralControl::~IntegralControl(){}
  */
 
 void IntegralControl::initfilters(){
-    Filteralfa.butterworth   (TsCart,this->freq*0.5,1);
-    Filteralfad.butterworth   (TsCart,this->freq*0.5,1);
+    Filteralfa.butterworth   (TsCart,this->freq*1,1);
+    Filteralfad.butterworth   (TsCart,this->freq*1,1);
+    outFilter.butterworth   (TsCart,this->freq*0.2,1);
+    stateFilter.butterworth   (TsCart,this->freq*0.07,1);
+
+    for (int i=1;i<30;i++)
+        outFilter.applyFilter(0);
+
 }
 std::vector<double> IntegralControl::filterdata2(double alfa,double alfad){
     std::vector<double> returnvector(2,0);
@@ -175,6 +181,14 @@ std::vector<double> IntegralControl::filterdata2(double alfa,double alfad){
     returnvector[1]   = Filteralfad.applyFilter  (alfad);
     return returnvector;
 }
+
+double IntegralControl::filterout(){
+    return outFilter.applyFilter  (this->U[N2]);
+}
+double IntegralControl::filterstate(double x){
+    return stateFilter.applyFilter  (x);
+}
+
 double IntegralControl::LQRcontroller(Vector2d States, double reference)
 {
         double LQRinput=this->LQRgains[0]*(reference-States(0))+this->LQRgains[1]*(-States(0));
@@ -339,7 +353,6 @@ void IntegralControl::MPC(double Yt,double *Wt){
         VectorXd prueba;
         prueba=this->saturateMPC(Err,Ybase,U);
         U[N2]=U[N2]+prueba[0];
-        cout<<"In: "<<U[N2]<<endl;
         return;
     }
     else{
@@ -351,20 +364,14 @@ void IntegralControl::MPC(double Yt,double *Wt){
                 Uopt[i] += invG(i,k)*Err[k];
             }
         }
-        double Umax=0.10;
-        if(Uopt[0]>Umax)
-            Uopt[0]=Umax;
-        else if(Uopt[0]<-Umax)
-            Uopt[0]=-Umax;
 
         U[N2]=U[N2]+Uopt[0];
-
-        Umax=10;
+        U[N2]=filterout();
+        double Umax=10;
         if(U[N2]>Umax)
             U[N2]=Umax;
         else if(U[N2]<-Umax)
             U[N2]=-Umax;
-        //cout<<"In: "<<U[N2]<<endl;
         return;
     }
 
