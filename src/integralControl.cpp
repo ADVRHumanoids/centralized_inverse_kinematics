@@ -351,16 +351,20 @@ void IntegralControl::MPC(double Yt,double *Wt){
                 Uopt[i] += invG(i,k)*Err[k];
             }
         }
-
+        double Umax=0.10;
+        if(Uopt[0]>Umax)
+            Uopt[0]=Umax;
+        else if(Uopt[0]<-Umax)
+            Uopt[0]=-Umax;
 
         U[N2]=U[N2]+Uopt[0];
 
-        double Umax=10;
+        Umax=10;
         if(U[N2]>Umax)
             U[N2]=Umax;
         else if(U[N2]<-Umax)
             U[N2]=-Umax;
-        cout<<"In: "<<U[N2]<<endl;
+        //cout<<"In: "<<U[N2]<<endl;
         return;
     }
 
