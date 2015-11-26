@@ -121,6 +121,7 @@ public:
 
     fullStabilizer comStabilizer;
     fullStabilizer comStabilizery;
+    yarp::sig::Matrix torsoref;
 
 
 private: void generateFootSteps(const int number_of_steps, const double step_width, const double step_lenght);

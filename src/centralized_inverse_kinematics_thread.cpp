@@ -6,7 +6,7 @@
 #include <OpenSoT/tasks/velocity/Interaction.h>
 #include <MatrixVector.h>
 
-#define LOG_DATA_SIZE 8
+#define LOG_DATA_SIZE 8+31
 
 using namespace OpenSoT::tasks::velocity;
 
@@ -45,7 +45,9 @@ centralized_inverse_kinematics_thread::centralized_inverse_kinematics_thread(   
         _ft_measurements.push_back(ft_measurement);
     }
 
-    imuIFace = new yarp_IMU_interface(get_module_prefix(), true, get_robot_name());
+    // the IMU reading is in Waist
+    imuIFace = new yarp_IMU_interface(get_module_prefix(), true,
+                                      get_robot_name(), "Waist");
 }
 
 bool centralized_inverse_kinematics_thread::custom_init()
@@ -156,12 +158,12 @@ void centralized_inverse_kinematics_thread::run()
         std::vector<double> filterAngPitch(2,0);
         std::vector<double> filterAngRoll(2,0);
         yarp::sig::Vector imu = imuIFace->sense();
-        filterAngPitch = ik_problem->controlPitch.filterdata2(imu(1), imu(7));
-        filterAngRoll = ik_problem->controlRoll.filterdata2(imu(0), imu(6));
+        filterAngPitch = ik_problem->controlPitch.filterdata2(imu(1)-ik_problem->controlPitch.offset, imu(7));
+        filterAngRoll = ik_problem->controlRoll.filterdata2(imu(0)-ik_problem->controlRoll.offset, imu(6));
 
         ik_problem->controlPitch.controlFlag = 1;
         ik_problem->controlRoll.controlFlag = 1;
-        ik_problem->controlPitch.alfa=0.95;
+        ik_problem->controlPitch.alfa=0.5;
         ik_problem->controlRoll.alfa=0.5;
 
         ik_problem->comStabilizer.controlFlag=1;
@@ -173,14 +175,15 @@ void centralized_inverse_kinematics_thread::run()
         double refPitch[ik_problem->controlPitch.N2];
         double refRoll[ik_problem->controlPitch.N2];
         for(unsigned i=0;i<ik_problem->controlPitch.N2;i++){
-            refPitch[i]=ik_problem->controlPitch.offset;
-            refRoll[i]=ik_problem->controlRoll.offset;
+            refPitch[i]=0;//ik_problem->controlPitch.offset;
+            refRoll[i]=0;//ik_problem->controlRoll.offset;
         }
 
         Matrix3d Hiprotation = Matrix3d::Identity();
         double Pitch=ik_problem->controlPitch.apply(refPitch);
-        //double Roll=ik_problem->controlRoll.apply(refRoll)*0.5;
+        //double Roll=ik_problem->controlRoll.apply(refRoll);
         Hiprotation = Ry(Pitch);
+        cout<<Pitch<<"  ";
         //Hiprotation=Hiprotation*Rx(Roll);
         yarp::sig::Vector q_measured(_q.size(), 0.0);
         robot.sense(q_measured, _dq, _tau);
@@ -207,13 +210,25 @@ void centralized_inverse_kinematics_thread::run()
                 ik_problem->start_walking_pattern = true;
             }
 
+//            Matrix3d Hiprotation2 = Matrix3d::Identity();
+//            for(unsigned i=0;i<3;i++){
+
+//                for(unsigned j=0;j<3;j++){
+//                    double temp=0;
+//                    for(unsigned k=0;k<3;k++){
+//                        temp+=Hiprotation(k,j)*ik_problem->torsoref(j,k);
+//                    }
+//                    Hiprotation2(i,j)=temp;
+//                }
+//            }
 
             int stance_foot = 1;
             yarp::sig::Matrix hipRef(4,4); hipRef.eye();
             for(unsigned int i = 0; i < 3; ++i){
                 for(unsigned int j = 0; j < 3; ++j)
-                    hipRef(i,j) = Hiprotation(i,j);
+                    hipRef(i,j) =  Hiprotation(i,j);
             }
+
             ik_problem->taskTorso->setReference(hipRef);
 
             double comRef[ik_problem->comStabilizer.N2];
@@ -245,7 +260,7 @@ void centralized_inverse_kinematics_thread::run()
             yarp::sig::Vector CoMd = ik_problem->taskCoM->getReference();
             CoMd(0) = CoMdx;
             //CoMd(1) = ik_problem->comStabilizery.offsety-CoMdy;
-            ik_problem->taskCoM->setReference(CoMd);
+            //ik_problem->taskCoM->setReference(CoMd);
 
         // LOG DATA
         log_data.push_back(comInfo[0]);
@@ -280,10 +295,11 @@ void centralized_inverse_kinematics_thread::run()
                 comInfo = ik_problem->comStabilizer.filterdata(
                             _robot_real.iDyn3_model.getCOM()[0],
                             _robot_real.iDyn3_model.getCOM()[1], get_thread_period());
-                filterAngPitch = ik_problem->controlPitch.filterdata2(imu(1), imu(7));
-                filterAngRoll = ik_problem->controlRoll.filterdata2(imu(0), imu(6));
-                double temporal=ik_problem->controlRoll.filterstate(imu(0));
-                temporal=ik_problem->controlPitch.filterstate(imu(1));
+                filterAngPitch = ik_problem->controlPitch.filterdata2(0, imu(7));
+                filterAngRoll = ik_problem->controlRoll.filterdata2(0, imu(6));
+                double temporal=ik_problem->controlPitch.filterstate(imu(1));
+                temporal=ik_problem->controlRoll.filterstate(imu(0));
+
             }
 
             ik_problem->comStabilizer.offset = comInfo[0];
@@ -297,13 +313,15 @@ void centralized_inverse_kinematics_thread::run()
                 ik_problem->comStabilizery.X[i]=ik_problem->comStabilizery.offset;
             }
 
-            ik_problem->controlPitch.offset=filterAngPitch[0];
-            ik_problem->controlRoll.offset=filterAngRoll[0];
+            ik_problem->controlPitch.offset=imu[1];
+            ik_problem->controlRoll.offset=imu[0];
             for(int i=0;i<ik_problem->controlPitch.N2+ik_problem->controlPitch.sizeA+1;i++){
-                ik_problem->controlPitch.X[i]=ik_problem->controlPitch.offset;
-                ik_problem->controlPitch.X[i]=ik_problem->controlPitch.offset;
+                ik_problem->controlPitch.X[i]=0;//ik_problem->controlPitch.offset;
+                ik_problem->controlPitch.X[i]=0;//ik_problem->controlPitch.offset;
             }
 
+
+            ik_problem->torsoref=ik_problem->taskTorso->getReference();
 
         }
 
@@ -313,7 +331,13 @@ void centralized_inverse_kinematics_thread::run()
             _q_ref = _q;
             _q_ref += _dq_ref;
             robot.move(_q_ref);
+
+            for(int i=0; i<_dq_ref.size();i++){
+            log_data.push_back(_dq_ref[i]/0.005);
+
+            }
         }
+
         else{
             _dq_ref = 0.0;
             ROS_ERROR("ERROR solving stack of tasks!");

@@ -53,8 +53,8 @@ IntegralControl::IntegralControl()
 //    this->Cmpc<<0.1367     ,    0 ,  -0.1367;
 //    this->Dmpc<<1.0000  , -1.2361 ,   0.7265;
 //    double k=0.01;
-    this->Cmpc<<0.0155 ,   0.0155;
-    this->Dmpc<<1.0000  , -0.9691;
+    this->Cmpc<<0.0,1.0;
+    this->Dmpc<<1.0000  , -1.0;
 
 
     /* tunning parameter, should be consistent with invG*/
@@ -166,10 +166,10 @@ IntegralControl::~IntegralControl(){}
  */
 
 void IntegralControl::initfilters(){
-    Filteralfa.butterworth   (TsCart,this->freq*1,1);
-    Filteralfad.butterworth   (TsCart,this->freq*1,1);
-    outFilter.butterworth   (TsCart,this->freq*0.2,1);
-    stateFilter.butterworth   (TsCart,this->freq*0.07,1);
+    Filteralfa.butterworth   (TsCart,this->freq*0.1,1);
+    Filteralfad.butterworth   (TsCart,this->freq*0.5,1);
+    outFilter.butterworth   (TsCart,this->freq*0.14,1);
+    stateFilter.butterworth   (TsCart,this->freq*0.5,1);
 
     for (int i=1;i<30;i++)
         outFilter.applyFilter(0);
@@ -372,7 +372,9 @@ void IntegralControl::MPC(double Yt,double *Wt){
             U[N2]=Umax;
         else if(U[N2]<-Umax)
             U[N2]=-Umax;
+        cout<<U[N2]<<endl;
         return;
+
     }
 
 }

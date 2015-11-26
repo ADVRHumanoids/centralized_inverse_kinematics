@@ -59,7 +59,8 @@ walking_problem::walking_problem(iDynUtils& robot_model, std::string &urdf_path,
     log_q_d("q_d", logger_proto::file_type::matlab),
     log_zmp_d("zmp_d", logger_proto::file_type::matlab),
     controlPitch(),
-    comStabilizer()
+    comStabilizer(),
+    torsoref(4,4)
 {
     LFootRef.eye();
     RFootRef.eye();
@@ -164,7 +165,7 @@ boost::shared_ptr<walking_problem::ik_problem> walking_problem::create_problem(c
     taskPelvis->setLambda(LAMBDA_GAIN);
 
     taskTorso.reset(new Cartesian("cartesian::Torso", state, robot_model,
-        "torso", "world"));
+        "torso", "Waist"));
     std::cout<<"TorsoRef:"<<std::endl;
     cartesian_utils::printHomogeneousTransform(taskTorso->getReference());
     taskTorso->setLambda(LAMBDA_GAIN);
@@ -206,7 +207,7 @@ boost::shared_ptr<walking_problem::ik_problem> walking_problem::create_problem(c
     JointLimits::ConstraintPtr boundJointLimits(JointLimits::ConstraintPtr(new JointLimits(state,
         robot_model.iDyn3_model.getJointBoundMax(), robot_model.iDyn3_model.getJointBoundMin())));
     VelocityLimits::ConstraintPtr boundsJointVelLimits(VelocityLimits::ConstraintPtr(
-        new VelocityLimits(M_PI, mSecToSec(dT), state.size())));
+        new VelocityLimits(0.5, mSecToSec(dT), state.size())));
 
 
     std::list<OpenSoT::tasks::Aggregated::TaskPtr> taskList;
