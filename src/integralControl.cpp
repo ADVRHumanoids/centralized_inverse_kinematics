@@ -35,8 +35,8 @@ IntegralControl::IntegralControl()
     /*SYSTEM AND FILTER TRANSFER FUCNTION (TF) LENGHTS*/
     this->sizeA=3;
     this->sizeB=3;
-    this->sizeC=2;
-    this->sizeD=2;
+    this->sizeC=3;
+    this->sizeD=3;
     this->States<<0,0;
     this->Ampc.resize(this->sizeA);
     this->Bmpc.resize(this->sizeB);
@@ -50,11 +50,11 @@ IntegralControl::IntegralControl()
      * [H,I]=butter(1,[0.001 0.9])
      *
      * )*/
-//    this->Cmpc<<0.1367     ,    0 ,  -0.1367;
-//    this->Dmpc<<1.0000  , -1.2361 ,   0.7265;
+    this->Cmpc<<0.0104 ,   0.0209  ,  0.0104;
+    this->Dmpc<<1.0000  , -1.6910   , 0.7327;
 //    double k=0.01;
-    this->Cmpc<<0.0,1.0;
-    this->Dmpc<<1.0000  , -1.0;
+  //  this->Cmpc<<0.0,1.0;
+  //  this->Dmpc<<1.0000  , -1.0;
 
 
     /* tunning parameter, should be consistent with invG*/
@@ -166,9 +166,9 @@ IntegralControl::~IntegralControl(){}
  */
 
 void IntegralControl::initfilters(){
-    Filteralfa.butterworth   (TsCart,this->freq*0.1,1);
-    Filteralfad.butterworth   (TsCart,this->freq*0.5,1);
-    outFilter.butterworth   (TsCart,this->freq*0.14,1);
+    Filteralfa.butterworth   (TsCart,this->freq*1,1);
+    Filteralfad.butterworth   (TsCart,this->freq*1,1);
+    outFilter.butterworth   (TsCart,this->freq*0.5,1);
     stateFilter.butterworth   (TsCart,this->freq*0.5,1);
 
     for (int i=1;i<30;i++)
@@ -372,7 +372,7 @@ void IntegralControl::MPC(double Yt,double *Wt){
             U[N2]=Umax;
         else if(U[N2]<-Umax)
             U[N2]=-Umax;
-        cout<<U[N2]<<endl;
+
         return;
 
     }
