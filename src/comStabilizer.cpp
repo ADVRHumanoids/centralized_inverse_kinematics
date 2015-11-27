@@ -63,7 +63,6 @@ fullStabilizer::fullStabilizer()
 //    this->Cmpc<< 0,-1;
 //    this->Dmpc<<1,-2,1;
 
-
     /*Initializations*/
     this->X.resize(N2+sizeA+1)    ;
     this->U.resize(N2+sizeB+1)    ;
