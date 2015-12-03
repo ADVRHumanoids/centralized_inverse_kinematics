@@ -65,6 +65,23 @@ bool centralized_inverse_kinematics_thread::custom_init()
 
     robot.idynutils.updateiDyn3Model(_q, _ft_measurements, true);
     _robot_real.updateiDyn3Model(_q, true);
+    
+        
+    // checking joint limit boudnb
+    auto max = model.iDyn3_model.getJointBoundMax();
+    auto min = model.iDyn3_model.getJointBoundMin();
+    
+    for (int i=0;i<_q.size();i++)
+    {
+        if (_q[i]>max[i])
+        {
+            std::cout<<"error: "<<model.getJointNames().at(i)<<"("<<_q[i]<<") is outside maximum bound: "<<max[i]<<std::endl;
+        }
+        if (_q[i]<min[i])
+        {
+            std::cout<<"error: "<<model.getJointNames().at(i)<<"("<<_q[i]<<") is outside minimum bound: "<<min[i]<<std::endl;
+        }
+    }
 
     std::string urdf_path = get_urdf_path();
     std::string srdf_path = get_srdf_path();
@@ -182,8 +199,8 @@ void centralized_inverse_kinematics_thread::run()
         Matrix3d Hiprotation = Matrix3d::Identity();
         double Pitch=ik_problem->controlPitch.apply(refPitch);
         double Roll=ik_problem->controlRoll.apply(refRoll);
-        Hiprotation = Ry(Pitch);
-        Hiprotation=Hiprotation*Rx(Roll);
+        Hiprotation = Ry(Pitch*0.5);
+//         Hiprotation=Hiprotation*Rx(Roll);
         yarp::sig::Vector q_measured(_q.size(), 0.0);
         robot.sense(q_measured, _dq, _tau);
         if(_is_clik)
@@ -244,11 +261,11 @@ void centralized_inverse_kinematics_thread::run()
             hipcontroly = ik_problem->comStabilizery.apply(comRefy)-ik_problem->comStabilizery.offset;
 
             double CoMdx = hipcontrol+ hipOffset[0];
-            double CoMdy = hipcontroly + hipOffset[1];
+            double CoMdy = hipcontroly*0.6 + hipOffset[1];
 
             yarp::sig::Vector CoMd = ik_problem->taskCoM->getReference();
             CoMd(0) = CoMdx;
-            CoMd(1) = ik_problem->comStabilizery.offsety-CoMdy;
+//             CoMd(1) = ik_problem->comStabilizery.offsety-CoMdy;
             ik_problem->taskCoM->setReference(CoMd);
 
         // LOG DATA
@@ -256,10 +273,10 @@ void centralized_inverse_kinematics_thread::run()
         log_data.push_back(comInfo[4]);
         log_data.push_back(filterAngPitch[0]);
         log_data.push_back(filterAngRoll[0]);
-            log_data.push_back(_robot_real.iDyn3_model.getCOM()[0]);
-            log_data.push_back(_robot_real.iDyn3_model.getCOM()[1]);
-            log_data.push_back(imu[0]);
-            log_data.push_back(imu[1]);
+        log_data.push_back(_robot_real.iDyn3_model.getCOM()[0]);
+        log_data.push_back(_robot_real.iDyn3_model.getCOM()[1]);
+        log_data.push_back(imu[0]);
+        log_data.push_back(imu[1]);
 
          }
 
