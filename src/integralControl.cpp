@@ -35,8 +35,8 @@ IntegralControl::IntegralControl()
     /*SYSTEM AND FILTER TRANSFER FUCNTION (TF) LENGHTS*/
     this->sizeA=3;
     this->sizeB=3;
-    this->sizeC=3;
-    this->sizeD=3;
+    this->sizeC=2;
+    this->sizeD=2;
     this->States<<0,0;
     this->Ampc.resize(this->sizeA);
     this->Bmpc.resize(this->sizeB);
