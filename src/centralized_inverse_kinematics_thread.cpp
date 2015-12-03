@@ -200,7 +200,7 @@ void centralized_inverse_kinematics_thread::run()
         double Pitch=ik_problem->controlPitch.apply(refPitch);
         double Roll=ik_problem->controlRoll.apply(refRoll);
         Hiprotation = Ry(Pitch*0.5);
-//         Hiprotation=Hiprotation*Rx(Roll);
+         Hiprotation=Hiprotation*Rx(Roll);
         yarp::sig::Vector q_measured(_q.size(), 0.0);
         robot.sense(q_measured, _dq, _tau);
         if(_is_clik)
