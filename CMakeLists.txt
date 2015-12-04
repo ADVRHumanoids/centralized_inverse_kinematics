@@ -77,7 +77,12 @@ src/problems/walking_problem.cpp
 src/comStabilizer.cpp
 src/FilterHClass.cpp
 src/integralControl.cpp
-src/MatrixVector.cpp		          )
+src/walkTrajectories.cpp
+src/mpcClass.cpp
+src/previewClass.cpp
+src/invertedPendulum.cpp
+src/zmpgenerator.cpp
+src/MatrixVector.cpp	          )
 
 TARGET_LINK_LIBRARIES(${PROJECT_NAME} ${walking_LIBRARIES}
                                       ${iDynTree_LIBRARIES}

@@ -10,6 +10,7 @@
 #include <IntegralControl.h>
 #include <idynutils/yarp_IMU_interface.h>
 #include <comStabilizer.h>
+#include <walkTrajectories.h>
 
 class logger_proto
 {
@@ -122,6 +123,8 @@ public:
     fullStabilizer comStabilizer;
     fullStabilizer comStabilizery;
     yarp::sig::Matrix torsoref;
+    dynamicWalk::DynamicWalkClass DynamicWalk;
+
 
 
 private: void generateFootSteps(const int number_of_steps, const double step_width, const double step_lenght);

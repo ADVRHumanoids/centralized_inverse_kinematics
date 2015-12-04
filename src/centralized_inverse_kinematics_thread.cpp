@@ -6,6 +6,7 @@
 #include <OpenSoT/tasks/velocity/Interaction.h>
 #include <MatrixVector.h>
 
+
 #define LOG_DATA_SIZE 8
 
 using namespace OpenSoT::tasks::velocity;
@@ -165,6 +166,16 @@ void centralized_inverse_kinematics_thread::run()
     if(ik_problem && qp_solver)
     {
         /** Sense **/
+
+        double stepLength=0.15;
+        double stepTime=1;
+        double stepLengthy=ik_problem->DynamicWalk.HALF_HIP_WIDTH;
+        double z_c=1;
+        double zmpyref=ik_problem->DynamicWalk.HALF_HIP_WIDTH;
+        double DSPhasePercent=0.2;
+        double footEdgex=0.2;
+        double clearance=0.06;
+        double xFinal=15;
         RobotUtils::ftReadings ft_readings = robot.senseftSensors();
 
         std::vector<double> comInfo(6);
@@ -235,38 +246,73 @@ void centralized_inverse_kinematics_thread::run()
                     hipRef(i,j) =  Hiprotation(i,j);
             }
 
-            ik_problem->taskTorso->setReference(hipRef);
+            //ik_problem->taskTorso->setReference(hipRef);
 
-            double comRef[ik_problem->comStabilizer.N2];
-            double comRefy[ik_problem->comStabilizery.N2];
-            double hipcontrol = 0.0;
-            double hipcontroly = 0.0;
+//            double comRef[ik_problem->comStabilizer.N2];
+//            double comRefy[ik_problem->comStabilizery.N2];
+//            double hipcontrol = 0.0;
+//            double hipcontroly = 0.0;
 
-            Vector3d hipOffset;
+            //Vector3d hipOffset;
+
+//            ik_problem->comStabilizer.States<<comInfo[0],comInfo[1];
+//            ik_problem->comStabilizery.States<<comInfo[3], comInfo[4];
+
+//            for(unsigned int i = 0; i < ik_problem->comStabilizer.N2; ++i)
+//                comRef[i] = ik_problem->comStabilizer.offset;
+//            for(unsigned int i = 0; i < ik_problem->comStabilizery.N2; ++i)
+//                comRefy[i] = ik_problem->comStabilizery.offset;
+//            Vector3d COMvector(0.0, 0.0, 0.35);
+//            hipOffset = ik_problem->controlPitch.DynamicCompensator(Hiprotation, COMvector, 80, 20);
+//            hipcontrol =ik_problem->comStabilizer.apply(comRef)*0.8;
+//            hipcontroly = ik_problem->comStabilizery.apply(comRefy)-ik_problem->comStabilizery.offset;
+
+           // double CoMdx = hipcontrol+ hipOffset[0];
+           // double CoMdy = hipcontroly*0.8 + hipOffset[1];
+
+            double stepTime2=stepTime;
+            if(ik_problem->DynamicWalk.ZMPstructure.stop==1 || ik_problem->DynamicWalk.ZMPstructure.stop==2){
+                stepTime2=1.5*stepTime;}
+            else{
+                stepTime2=stepTime;
+            }
             double fgcom[3], fgcomy[3];
             for(unsigned int i = 0; i < 3; ++i){
                 fgcom[i] = comInfo[i];
                 fgcomy[i] = comInfo[i+3];
             }
-            ik_problem->comStabilizer.States<<comInfo[0],comInfo[1];
-            ik_problem->comStabilizery.States<<comInfo[3], comInfo[4];
+//            fgcom[0]=fgcom[0]-ik_problem->comStabilizer.offset;
+//            fgcom[3]=fgcom[3]-ik_problem->comStabilizery.offset;
+            ik_problem->DynamicWalk.UpdateStructure(stepLength,stepTime2,stepLengthy,z_c,zmpyref,DSPhasePercent,footEdgex);
+            ik_problem->DynamicWalk.ZMP_MPC(xFinal,fgcom,fgcomy,z_c);
+            ik_problem->DynamicWalk.ZMPstructure.whichfoot=2;//irobot.WhichFoot;
 
-            for(unsigned int i = 0; i < ik_problem->comStabilizer.N2; ++i)
-                comRef[i] = ik_problem->comStabilizer.offset;
-            for(unsigned int i = 0; i < ik_problem->comStabilizery.N2; ++i)
-                comRefy[i] = ik_problem->comStabilizery.offset;
-            Vector3d COMvector(0.0, 0.0, 0.35);
-            hipOffset = ik_problem->controlPitch.DynamicCompensator(Hiprotation, COMvector, 80, 20);
-            hipcontrol =ik_problem->comStabilizer.apply(comRef)*0.8;
-            hipcontroly = ik_problem->comStabilizery.apply(comRefy)-ik_problem->comStabilizery.offset;
-
-            double CoMdx = hipcontrol+ hipOffset[0];
-            double CoMdy = hipcontroly*0.8 + hipOffset[1];
 
             yarp::sig::Vector CoMd = ik_problem->taskCoM->getReference();
-            CoMd(0) = CoMdx;
-//             CoMd(1) = ik_problem->comStabilizery.offsety-CoMdy;
+
+            CoMd(0) = ik_problem->DynamicWalk.x_active[0]-0.04;
+            CoMd(1) = ik_problem->DynamicWalk.y_active[0]-0.05;
             ik_problem->taskCoM->setReference(CoMd);
+//            cout<<CoMd(0)<<"   "<<CoMd(1)<<"    "
+//               <<ik_problem->DynamicWalk.x_active[0]<<" "
+//                <<ik_problem->DynamicWalk.y_active[0]<<endl;
+
+
+            yarp::sig::Matrix LFootReference(4,4); LFootReference = LFootReference.eye();
+            LFootReference(0,3) = ik_problem->DynamicWalk.ZMPstructure.LFX;
+            LFootReference(1,3) = ik_problem->DynamicWalk.ZMPstructure.LFY-ik_problem->comStabilizery.offset;
+            LFootReference(2,3) = ik_problem->DynamicWalk.ZMPstructure.LFZ+0.1435;
+            ik_problem->taskLFoot->setReference(LFootReference);
+
+            yarp::sig::Matrix RFootReference(4,4); RFootReference = RFootReference.eye();
+            RFootReference(0,3) = ik_problem->DynamicWalk.ZMPstructure.RFX;
+            RFootReference(1,3) = ik_problem->DynamicWalk.ZMPstructure.RFY-ik_problem->comStabilizery.offset;
+            RFootReference(2,3) = ik_problem->DynamicWalk.ZMPstructure.RFZ+0.1435;
+
+            ik_problem->taskRFoot->setReference(RFootReference);
+//            RFootReference=ik_problem->taskRFoot->getReference();
+//            cout<<RFootReference(1,3)<<"    "<<ik_problem->DynamicWalk.ZMPstructure.RFY<<endl;
+
 
         // LOG DATA
         log_data.push_back(comInfo[0]);
@@ -328,6 +374,17 @@ void centralized_inverse_kinematics_thread::run()
 
 
             ik_problem->torsoref=ik_problem->taskTorso->getReference();
+
+            double fgcom[3], fgcomy[3];
+            for(unsigned int i = 0; i < 3; ++i){
+                fgcom[i] = comInfo[i];
+                fgcomy[i] = comInfo[i+3];
+            }
+
+            ik_problem->DynamicWalk.Initialize(stepLength,stepTime,stepLengthy,z_c,zmpyref,DSPhasePercent,footEdgex);
+            ik_problem->DynamicWalk.initStructure(fgcom,fgcomy,zmpyref,clearance);
+
+
 
         }
 

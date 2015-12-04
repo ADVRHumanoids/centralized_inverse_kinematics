@@ -60,7 +60,8 @@ walking_problem::walking_problem(iDynUtils& robot_model, std::string &urdf_path,
     log_zmp_d("zmp_d", logger_proto::file_type::matlab),
     controlPitch(),
     comStabilizer(),
-    torsoref(4,4)
+    torsoref(4,4),
+    DynamicWalk()
 {
     LFootRef.eye();
     RFootRef.eye();
