@@ -255,13 +255,13 @@ void centralized_inverse_kinematics_thread::run()
                 comRef[i] = ik_problem->comStabilizer.offset;
             for(unsigned int i = 0; i < ik_problem->comStabilizery.N2; ++i)
                 comRefy[i] = ik_problem->comStabilizery.offset;
-            Vector3d COMvector(0.0, 0.0, 0.25);
+            Vector3d COMvector(0.0, 0.0, 0.35);
             hipOffset = ik_problem->controlPitch.DynamicCompensator(Hiprotation, COMvector, 80, 20);
-            hipcontrol =ik_problem->comStabilizer.apply(comRef)*0.6;
+            hipcontrol =ik_problem->comStabilizer.apply(comRef)*0.8;
             hipcontroly = ik_problem->comStabilizery.apply(comRefy)-ik_problem->comStabilizery.offset;
 
             double CoMdx = hipcontrol+ hipOffset[0];
-            double CoMdy = hipcontroly*0.6 + hipOffset[1];
+            double CoMdy = hipcontroly*0.8 + hipOffset[1];
 
             yarp::sig::Vector CoMd = ik_problem->taskCoM->getReference();
             CoMd(0) = CoMdx;
