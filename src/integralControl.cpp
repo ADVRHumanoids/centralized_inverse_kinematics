@@ -52,14 +52,18 @@ IntegralControl::IntegralControl()
      * )*/
 //   this->Cmpc<<0.1367     ,    0 ,  -0.1367;
    //this->Dmpc<<1.0000  , -1.2361 ,   0.7265;
+
+
 //    double k=0.01;
      this->Cmpc<<0.0,1.0;
      this->Dmpc<<1.0000  , -1.0;
 
+//    this->Cmpc<<0.9006 ,  -0.9006;
+//    this->Dmpc<<1.0000  , -0.8012;
 
     /* tunning parameter, should be consistent with invG*/
-    this->Nu=3;
-    this->N2=20;
+    this->Nu=7;
+    this->N2=10;
     this->alfa=0.5;
     this->controlFlag=0;
     /*Initializations*/
@@ -166,9 +170,9 @@ IntegralControl::~IntegralControl(){}
  */
 
 void IntegralControl::initfilters(){
-    Filteralfa.butterworth   (TsCart,this->freq*0.1,1);
-    Filteralfad.butterworth   (TsCart,this->freq*0.5,1);
-    outFilter.butterworth   (TsCart,this->freq*0.05,1);
+    Filteralfa.butterworth   (TsCart,this->freq*1,1);
+    Filteralfad.butterworth   (TsCart,this->freq*1,1);
+    outFilter.butterworth   (TsCart,this->freq*0.1,1);
     stateFilter.butterworth   (TsCart,this->freq*0.05,1);
 
     for (int i=1;i<30;i++)
@@ -337,7 +341,7 @@ void IntegralControl::MPC(double Yt,double *Wt){
 
     }
 
-    X[N2]=Yt; // SERIE-PARALELO
+    //X[N2]=Yt; // SERIE-PARALELO
     // 7= New control input U=U+ inv(G'*G)*G'*Err
     double Ref[N2+1];
     Ref[0]=Yt;
@@ -367,7 +371,7 @@ void IntegralControl::MPC(double Yt,double *Wt){
 
         U[N2]=U[N2]+Uopt[0];
         U[N2]=filterout();
-        double Umax=100;
+        double Umax=200;
         if(U[N2]>Umax)
             U[N2]=Umax;
         else if(U[N2]<-Umax)
@@ -429,16 +433,16 @@ VectorXd IntegralControl::saturateMPC(double *Err, double *Ybase,std::vector<dou
         Error(i)=-Err[i];
     }
 
-    double Umax=5;
-    double Umin=-5;
+    double Umax=20;
+    double Umin=-20;
 
     for (int i=0;i<Nu;i++){
         this->ConstraintB(i)=Umax*pow(Umax,i)-U[N2-i];
         this->ConstraintB(i+Nu)=U[N2-i]-Umin*pow(Umax,i);
     }
 
-    double maxy=20;
-    double miny=-20;
+    double maxy=2;
+    double miny=-2;
     VectorXd maxConstraint(N2);
     VectorXd minConstraint(N2);
     for (int i=0;i<N2;i++){

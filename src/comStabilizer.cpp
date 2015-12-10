@@ -9,7 +9,8 @@
 fullStabilizer::fullStabilizer()
 {
     /* tunning parameter, should be consistent with invG*/
-    this->Nu=7;
+    this->Nu=5;
+    /*original was 7-20 with upgrade 6*/
     this->N2=20;
     this->alfa=0;
     this->controlFlag=0;
@@ -56,10 +57,10 @@ fullStabilizer::fullStabilizer()
      *
      * )*/
 
-//    this->Cmpc<< 0.0929 , 0 ,-0.0929;
-//    this->Dmpc<<1.0000,-1.7828,0.8141;
-    this->Cmpc<< 0.8173 ,-1.5372,0.8173;
-    this->Dmpc<<1,-1.5372 ,0.6346;
+    this->Cmpc<< 0.0929 , 0 ,-0.0929;
+    this->Dmpc<<1.0000,-1.7828,0.8141;
+//    this->Cmpc<< 0.8173 ,-1.5372,0.8173;
+//    this->Dmpc<<1,-1.5372 ,0.6346;
 //    this->Cmpc<< 0,-1;
 //    this->Dmpc<<1,-2,1;
 
@@ -174,12 +175,12 @@ fullStabilizer::~fullStabilizer(){}
  * @return desire state X (k+1)
  */
 void fullStabilizer::initfilters(){
-    Filterx.butterworth     (this->sampletime,this->freq*1,3);
-    Filterdx.butterworth    (this->sampletime,this->freq*1,3);
-    Filterddx.butterworth   (this->sampletime,this->freq*1,3);
-    Filtery.butterworth     (this->sampletime,this->freq*1,1);
-    Filterdy.butterworth    (this->sampletime,this->freq*1,1);
-    Filterddy.butterworth   (this->sampletime,this->freq*1,3);
+    Filterx.butterworth     (this->sampletime,this->freq*0.5,3);
+    Filterdx.butterworth    (this->sampletime,this->freq*0.5,3);
+    Filterddx.butterworth   (this->sampletime,this->freq*0.5,3);
+    Filtery.butterworth     (this->sampletime,this->freq*0.5,1);
+    Filterdy.butterworth    (this->sampletime,this->freq*0.5,1);
+    Filterddy.butterworth   (this->sampletime,this->freq*0.5,3);
     Filteralfa.butterworth  (this->sampletime,this->freq*1,3);
     Filteralfad.butterworth (this->sampletime,this->freq*1,1);
     Filterbeta.butterworth  (this->sampletime,this->freq*1,3);
