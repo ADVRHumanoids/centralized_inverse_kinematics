@@ -341,7 +341,7 @@ void IntegralControl::MPC(double Yt,double *Wt){
 
     }
 
-    //X[N2]=Yt; // SERIE-PARALELO
+    X[N2]=Yt; // SERIE-PARALELO
     // 7= New control input U=U+ inv(G'*G)*G'*Err
     double Ref[N2+1];
     Ref[0]=Yt;
