@@ -10,6 +10,7 @@
 #include <IntegralControl.h>
 #include <idynutils/yarp_IMU_interface.h>
 #include <comStabilizer.h>
+#include <ZMPStabilizer.h>
 
 class logger_proto
 {
@@ -121,6 +122,9 @@ public:
 
     fullStabilizer comStabilizer;
     fullStabilizer comStabilizery;
+
+    ZMPStabilizer zmpBalance;
+    ZMPStabilizer zmpBalancey;
     yarp::sig::Matrix torsoref;
 
 

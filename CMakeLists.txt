@@ -77,6 +77,7 @@ src/problems/walking_problem.cpp
 src/comStabilizer.cpp
 src/FilterHClass.cpp
 src/integralControl.cpp
+src/ZMPStabilizer.cpp
 src/MatrixVector.cpp		          )
 
 TARGET_LINK_LIBRARIES(${PROJECT_NAME} ${walking_LIBRARIES}

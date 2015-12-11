@@ -168,7 +168,7 @@ void centralized_inverse_kinematics_thread::run()
         RobotUtils::ftReadings ft_readings = robot.senseftSensors();
 
         std::vector<double> comInfo(6);
-        comInfo = ik_problem->comStabilizer.filterdata(
+        comInfo = ik_problem->zmpBalance.filterdata(
                     _robot_real.iDyn3_model.getCOM()[0],
                     _robot_real.iDyn3_model.getCOM()[1], get_thread_period());
 
@@ -183,9 +183,9 @@ void centralized_inverse_kinematics_thread::run()
         ik_problem->controlPitch.alfa=0;
         ik_problem->controlRoll.alfa=0.5;
 
-        ik_problem->comStabilizer.controlFlag=1;
-        ik_problem->comStabilizery.controlFlag=1;
-        ik_problem->comStabilizer.alfa=0.5;
+        ik_problem->zmpBalance.controlFlag=1;
+        ik_problem->zmpBalancey.controlFlag=1;
+        ik_problem->zmpBalance.alfa=0.5;
 
 
 
@@ -239,8 +239,8 @@ void centralized_inverse_kinematics_thread::run()
 
             ik_problem->taskTorso->setReference(hipRef);
 
-            double comRef[ik_problem->comStabilizer.N2];
-            double comRefy[ik_problem->comStabilizery.N2];
+            double comRef[ik_problem->zmpBalance.N2];
+            double comRefy[ik_problem->zmpBalancey.N2];
             double hipcontrol = 0.0;
             double hipcontroly = 0.0;
 
@@ -250,24 +250,24 @@ void centralized_inverse_kinematics_thread::run()
                 fgcom[i] = comInfo[i];
                 fgcomy[i] = comInfo[i+3];
             }
-            ik_problem->comStabilizer.States<<comInfo[0],comInfo[1];
-            ik_problem->comStabilizery.States<<comInfo[3], comInfo[4];
+            ik_problem->zmpBalance.States<<comInfo[0],comInfo[1];
+            ik_problem->zmpBalancey.States<<comInfo[3], comInfo[4];
 
-            for(unsigned int i = 0; i < ik_problem->comStabilizer.N2; ++i)
-                comRef[i] = ik_problem->comStabilizer.offset;
-            for(unsigned int i = 0; i < ik_problem->comStabilizery.N2; ++i)
-                comRefy[i] = ik_problem->comStabilizery.offset;
+            for(unsigned int i = 0; i < ik_problem->zmpBalance.N2; ++i)
+                comRef[i] = ik_problem->zmpBalance.offset;
+            for(unsigned int i = 0; i < ik_problem->zmpBalancey.N2; ++i)
+                comRefy[i] = ik_problem->zmpBalancey.offset;
             Vector3d COMvector(0.0, 0.0, 0.35);
             hipOffset = ik_problem->controlPitch.DynamicCompensator(Hiprotation, COMvector, 80, 20);
-            hipcontrol =ik_problem->comStabilizer.apply(comRef)*0.8;
-            hipcontroly = ik_problem->comStabilizery.apply(comRefy)-ik_problem->comStabilizery.offset;
+            hipcontrol =ik_problem->zmpBalance.apply(comRef)*0.8;
+            hipcontroly = ik_problem->zmpBalancey.apply(comRefy)-ik_problem->zmpBalancey.offset;
 
             double CoMdx = hipcontrol+ hipOffset[0];
             double CoMdy = hipcontroly*0.8 + hipOffset[1];
 
             yarp::sig::Vector CoMd = ik_problem->taskCoM->getReference();
             CoMd(0) = CoMdx;
-//             CoMd(1) = ik_problem->comStabilizery.offsety-CoMdy;
+//             CoMd(1) = ik_problem->zmpBalancey.offsety-CoMdy;
             ik_problem->taskCoM->setReference(CoMd);
 
         // LOG DATA
@@ -300,7 +300,7 @@ void centralized_inverse_kinematics_thread::run()
             ik_problem->reset_solver = true;
 
             for(int i=0;i<100;i++){
-                comInfo = ik_problem->comStabilizer.filterdata(
+                comInfo = ik_problem->zmpBalance.filterdata(
                             _robot_real.iDyn3_model.getCOM()[0],
                             _robot_real.iDyn3_model.getCOM()[1], get_thread_period());
                 filterAngPitch = ik_problem->controlPitch.filterdata2(0, imu(7));
@@ -310,15 +310,15 @@ void centralized_inverse_kinematics_thread::run()
 
             }
 
-            ik_problem->comStabilizer.offset = comInfo[0];
-            ik_problem->comStabilizery.offset =comInfo[3];
+            ik_problem->zmpBalance.offset = comInfo[0];
+            ik_problem->zmpBalancey.offset =comInfo[3];
             yarp::sig::Vector CoMd = ik_problem->taskCoM->getReference();
 
-            ik_problem->comStabilizery.offsety =CoMd[1];
+            ik_problem->zmpBalancey.offsety =CoMd[1];
 
-            for(int i=0;i<ik_problem->comStabilizer.N2+ik_problem->comStabilizer.sizeA+1;i++){
-                ik_problem->comStabilizer.X[i]=ik_problem->comStabilizer.offset;
-                ik_problem->comStabilizery.X[i]=ik_problem->comStabilizery.offset;
+            for(int i=0;i<ik_problem->zmpBalance.N2+ik_problem->zmpBalance.sizeA+1;i++){
+                ik_problem->zmpBalance.X[i]=ik_problem->zmpBalance.offset;
+                ik_problem->zmpBalancey.X[i]=ik_problem->zmpBalancey.offset;
             }
 
             ik_problem->controlPitch.offset=imu[1];
