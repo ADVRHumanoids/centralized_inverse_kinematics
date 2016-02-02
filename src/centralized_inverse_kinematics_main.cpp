@@ -25,8 +25,10 @@ int main(int argc, char* argv[])
     rf.setVerbose(true);
     // set centralized_inverse_kinematics_initial_config.ini as default
     // to specify another config file, run with this arg: --from your_config_file.ini 
-    rf.setDefaultConfigFile( "centralized_inverse_kinematics_initial_config.ini" ); 
-    rf.setDefaultContext( "centralized_inverse_kinematics" );  
+    rf.setDefaultConfigFile( "centralized_inverse_kinematics_initial_config.ini" );
+    //rf.setDefaultConfigFile( "centralized_inverse_kinematics_coman_config.ini" );
+
+    rf.setDefaultContext( "centralized_inverse_kinematics" );
     rf.configure(argc, argv);
     // create my module
     centralized_inverse_kinematics_module centralized_inverse_kinematics_mod = centralized_inverse_kinematics_module( argc, 

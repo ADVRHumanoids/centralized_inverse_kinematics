@@ -55,11 +55,11 @@ IntegralControl::IntegralControl()
 
 
 //    double k=0.01;
-     this->Cmpc<<0.0,1.0;
-     this->Dmpc<<1.0000  , -1.0;
+ //    this->Cmpc<<0.0,1.0;
+ //    this->Dmpc<<1.0000  , -1.0;
 
-//    this->Cmpc<<0.9006 ,  -0.9006;
-//    this->Dmpc<<1.0000  , -0.8012;
+    this->Cmpc<<0.9006 ,  -0.9006;
+    this->Dmpc<<1.0000  , -0.8012;
 
     /* tunning parameter, should be consistent with invG*/
     this->Nu=7;

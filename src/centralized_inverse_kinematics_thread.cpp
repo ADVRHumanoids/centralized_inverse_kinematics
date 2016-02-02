@@ -181,7 +181,7 @@ void centralized_inverse_kinematics_thread::run()
         ik_problem->controlPitch.controlFlag = 1;
         ik_problem->controlRoll.controlFlag = 1;
         ik_problem->controlPitch.alfa=0;
-        ik_problem->controlRoll.alfa=0.5;
+        ik_problem->controlRoll.alfa=0.9;
 
         ik_problem->comStabilizer.controlFlag=1;
         ik_problem->comStabilizery.controlFlag=1;
@@ -201,8 +201,8 @@ void centralized_inverse_kinematics_thread::run()
         Matrix3d Hiprotation = Matrix3d::Identity();
         double Pitch=ik_problem->controlPitch.apply(refPitch);
         double Roll=ik_problem->controlRoll.apply(refRoll);
-        Hiprotation = Ry(Pitch);
-         Hiprotation=Hiprotation*Rx(Roll);
+        Hiprotation = Ry(Pitch*0.5);
+        // Hiprotation=Hiprotation*Rx(Roll);
         yarp::sig::Vector q_measured(_q.size(), 0.0);
         robot.sense(q_measured, _dq, _tau);
         if(_is_clik)
