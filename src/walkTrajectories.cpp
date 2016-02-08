@@ -3,7 +3,7 @@ using namespace dynamicWalk;
 
 DynamicWalkClass::DynamicWalkClass(){
     //default constructor
-    relativeflag=0;
+
     x_cart[0]=x_cart[1]=x_cart[2]=0;
     y_cart[0]=y_cart[1]=y_cart[2]=0;
 
@@ -14,7 +14,7 @@ DynamicWalkClass::DynamicWalkClass(){
 
 
     //initialize in the default values
-    this->Initialize(0.2,0.9,HALF_HIP_WIDTH*2,0.38,HALF_HIP_WIDTH,0.2,0.05);
+    this->Initialize(0.2,0.9,HALF_HIP_WIDTH*2,0.8,HALF_HIP_WIDTH,0.2,0.05);
     std::string FILE="invGZMP.txt";
     std::string FILE2="Gd.txt";
     std::string FILEH="invHZMP.txt";
@@ -75,7 +75,10 @@ Filteralfa.butterworth  (TsCart,dynamicWalk::freq*4,1);
 Filteralfad.butterworth (TsCart,dynamicWalk::freq*4,1);
 Filterbeta.butterworth  (TsCart,dynamicWalk::freq*4,1);
 Filterbetad.butterworth (TsCart,dynamicWalk::freq*4,1);
-
+Filterlzmpx.butterworth  (TsCart,dynamicWalk::freq*0.4,1);
+Filterrzmpx.butterworth  (TsCart,dynamicWalk::freq*0.4,1);
+Filterlzmpy.butterworth  (TsCart,dynamicWalk::freq*0.4,1);
+Filterrzmpy.butterworth  (TsCart,dynamicWalk::freq*0.4,1);
 this->Fgcomx[0]=0;this->Fgcomx[1]=0;this->Fgcomx[2]=0;
 this->Fgcomy[0]=0;this->Fgcomy[1]=0;this->Fgcomy[2]=0;
 }
@@ -130,6 +133,19 @@ std::vector<double> DynamicWalkClass::filterdata2(double alfa,double alfad,doubl
     returnvector[3]   = Filterbetad.applyFilter  (betad);
     return returnvector;
 }
+Eigen::VectorXd DynamicWalkClass::filterdatazmp(double lzmpx,double rzmpx,double lzmpy,double rzmpy){
+
+    Eigen::VectorXd returnvector(6);
+    returnvector[0]   = Filterlzmpx.applyFilter  (lzmpx);
+    returnvector[1]   = Filterlzmpy.applyFilter  (lzmpy);
+    returnvector[2]   = 0;
+
+    returnvector[3]   = Filterrzmpy.applyFilter  (rzmpx);
+    returnvector[4]   = Filterrzmpy.applyFilter  (rzmpy);
+    returnvector[5]   = 0;
+    return returnvector;
+}
+
 void DynamicWalkClass::initStructure(double gcomx[3],double gcomy[3],double zmpyref,double clearance){
 
         this->ZMPstructure.stop=0;
@@ -608,7 +624,7 @@ void DynamicWalkClass::footReference(){
         this->ZMPstructure.footChange=1;
         this->ZMPstructure.position=this->ZMPstructure.desirexf;
         this->ZMPstructure.stepCount=this->ZMPstructure.stepCount+1;
-        relativeflag=0;
+
     }
     else if  (this->ZMPstructure.goRight){
         /*this->ZMPstructure.RFY=RF[1];
@@ -619,7 +635,7 @@ void DynamicWalkClass::footReference(){
         this->ZMPstructure.footChange=1;
         this->ZMPstructure.position=this->ZMPstructure.desirexf;
         this->ZMPstructure.stepCount=this->ZMPstructure.stepCount+1;
-        relativeflag=1;
+
     }
 }
 void DynamicWalkClass::feetUpdate(){
@@ -665,17 +681,12 @@ void DynamicWalkClass::zmpTrajectory(double Tc,double xfinal){
     std:vector<double> tempZMP(zmpref2.preview_window);
     //compute the saggital local distace of the COM respect to the stance foot
     double Xposition=(this->ZMPstructure.actualPos-this->ZMPstructure.footPosition);
-//    if (relativeflag){
-//        Xposition=relativepos[0];
-//    }
-//        else if(!relativeflag){
-//        Xposition=relativepos[1];
-//    }
+
     bool reactive=(pow(this->ZMPstructure.actualSpeed,2)>pow(this->ZMPstructure.footEdgex,2)*9.81/this->ZMPstructure.z_c) || (this->ZMPstructure.actualPos>this->ZMPstructure.footPosition+this->ZMPstructure.footEdgex*2);
 
 
     //if moving forward
-    if  ((((Xposition<=0.0 && this->ZMPstructure.actualSpeed>((Xposition))/Tc) || ((Xposition)>0.0) ))&& this->ZMPstructure.actualSpeed>0.05 && (this->ZMPstructure.stop==3 || this->ZMPstructure.stop==0 || this->ZMPstructure.stop==2)  && this->ZMPstructure.stepCount>0
+    if  ((((Xposition<=0.0 && this->ZMPstructure.actualSpeed>((Xposition))/Tc) || ((Xposition)>0.0) ))&& this->ZMPstructure.actualSpeed>0.005 && (this->ZMPstructure.stop==3 || this->ZMPstructure.stop==0 || this->ZMPstructure.stop==2)  && this->ZMPstructure.stepCount>0
          || ( ( (this->ZMPstructure.stop==0 ) && reactive && this->ZMPstructure.xfinal<=this->ZMPstructure.zmpx[0]) || (this->ZMPstructure.stop==3 || this->ZMPstructure.stop==2)) || (this->ZMPstructure.walkingcase==1 && Xposition>-0.05 && !this->ZMPstructure.stop==1)
          ){
             walkingcase=1;

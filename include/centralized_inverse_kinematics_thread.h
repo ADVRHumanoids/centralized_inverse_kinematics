@@ -80,7 +80,21 @@ public:
      * @brief centralized_inverse_kinematics control thread main loop
      * 
      */
-    virtual void run();    
+    virtual void run();
+    Eigen::VectorXd ZMPcalculation();
+    Eigen::Vector2d Forcecalculation();
+    void StabilizerCOP();
+    double deltaZMPx_ODE;   // zmp error
+    double deltaZMPy_ODE;
+
+    double deltaZMPx_old;
+    double deltaZMPy_old;
+    const int samples2ODE=50;
+    double dZMP_bufferODE[2][50]; //derevative of filtered ZMP circular buffer
+    double dZMPODE[2]={0};
+    double FzODE[2];
+     double deltaHip_ODE[3];
+     double scaleCOP;
 };
 
 #endif

@@ -32,7 +32,7 @@ const int sizeA=4;
 const int sizeB=4;
 const int sizeC=1;
 const int sizeD=4;
-const  double halfHip=0.0738;
+const  double halfHip=0.14;
 static double Gd[N2];
 static double Gd1[3];
 static double GI;
@@ -130,9 +130,13 @@ class DynamicWalkClass {
             FilterH Filteralfad;
             FilterH Filterbeta;
             FilterH Filterbetad;
-
+            FilterH Filterlzmpx;
+            FilterH Filterrzmpx;
+            FilterH Filterlzmpy;
+            FilterH Filterrzmpy;
             std::vector<double> filterdata(double gcomx,double gcomy,double pos[3],double TsCart);
             std::vector<double> filterdata2(double alfa,double alfad,double beta,double betad);
+            Eigen::VectorXd filterdatazmp(double lzmpx,double rzmpx,double lzmpy,double rzmpy);
             void MPC_constrained(double *X, double *U, double *NF, double *N, double Yt, double *Wt,double z_c,double acceleration,char);
             void UpdateStructure(double stepLength,double stepTime,double stepLengthy,double z_c,double zmpyref,double DSPhasePercent,double footEdgex);
             void initStructure(double gcomx[3],double gcomy[3],double zmpyref,double clearance);
