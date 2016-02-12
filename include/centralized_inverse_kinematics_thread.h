@@ -92,9 +92,22 @@ public:
     const int samples2ODE=50;
     double dZMP_bufferODE[2][50]; //derevative of filtered ZMP circular buffer
     double dZMPODE[2]={0};
-    double FzODE[2];
-     double deltaHip_ODE[3];
+    double FzODE[2]={0};
+    double deltaHip_ODE[3];
      double scaleCOP;
+     yarp::sig::Matrix LFootoffset;
+     yarp::sig::Matrix RFootoffset;
+     double TotalTime;
+     double stepLength;
+     double stepTime;
+     double stepLengthy;
+     double z_c;
+     double zmpyref;
+     double DSPhasePercent;
+     double footEdgex;
+     double clearance;
+     double xFinal;
+
 };
 
 #endif

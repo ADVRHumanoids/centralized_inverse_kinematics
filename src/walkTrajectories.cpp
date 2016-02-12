@@ -71,10 +71,12 @@ Filterddx.butterworth   (TsCart,dynamicWalk::freq*2,1);
 Filtery.butterworth     (TsCart,dynamicWalk::freq*4,1);
 Filterdy.butterworth    (TsCart,dynamicWalk::freq*1,1);
 Filterddy.butterworth   (TsCart,dynamicWalk::freq*1,3);
-Filteralfa.butterworth  (TsCart,dynamicWalk::freq*4,1);
-Filteralfad.butterworth (TsCart,dynamicWalk::freq*4,1);
-Filterbeta.butterworth  (TsCart,dynamicWalk::freq*4,1);
-Filterbetad.butterworth (TsCart,dynamicWalk::freq*4,1);
+
+FilterCOPX.butterworth  (TsCart,dynamicWalk::freq*0.5,1);
+FilterCOPY.butterworth (TsCart,dynamicWalk::freq*0.5,1);
+FilterDeltaHIPX.butterworth  (TsCart,dynamicWalk::freq*0.5,1);
+FilterDeltaHIPY.butterworth (TsCart,dynamicWalk::freq*0.5,1);
+
 Filterlzmpx.butterworth  (TsCart,dynamicWalk::freq*0.4,1);
 Filterrzmpx.butterworth  (TsCart,dynamicWalk::freq*0.4,1);
 Filterlzmpy.butterworth  (TsCart,dynamicWalk::freq*0.4,1);
@@ -82,7 +84,7 @@ Filterrzmpy.butterworth  (TsCart,dynamicWalk::freq*0.4,1);
 this->Fgcomx[0]=0;this->Fgcomx[1]=0;this->Fgcomx[2]=0;
 this->Fgcomy[0]=0;this->Fgcomy[1]=0;this->Fgcomy[2]=0;
 }
-std::vector<double> DynamicWalkClass::filterdata(double gcomx,double gcomy,double pos[3],double TsCart){
+std::vector<double> DynamicWalkClass::filterdata(double gcomx,double gcomy,double TsCart){
 //double filterini=0;
 
 
@@ -92,15 +94,15 @@ double gcom_old,gdcom_old,gcom_oldy,gdcom_oldy=0;
 
     gcom_old    = this->Fgcomx[0];
     gdcom_old   = this->Fgcomx[1];
-    this->Fgcomx[0]   = gcomx*cos(pos[2])+gcomy*sin(pos[2]);	// gcom is the estimated COM in world coordinate
-    //this->Fgcomx[0]   = gcomx;	// gcom is the estimated COM in world coordinate
+    //this->Fgcomx[0]   = gcomx*cos(pos[2])+gcomy*sin(pos[2]);	// gcom is the estimated COM in world coordinate
+    this->Fgcomx[0]   = gcomx;	// gcom is the estimated COM in world coordinate
     double speedx	= (this->Fgcomx[0]-gcom_old)/TsCart;
 
 
     gcom_oldy	= this->Fgcomy[0];
     gdcom_oldy	= this->Fgcomy[1];
-    this->Fgcomy[0]	= -gcomx*sin(pos[2])+gcomy*cos(pos[2]);	// gcom is the estimated COM in world coordinate
-    //this->Fgcomy[0]	= gcomy;	// gcom is the estimated COM in world coordinate
+    //this->Fgcomy[0]	= -gcomx*sin(pos[2])+gcomy*cos(pos[2]);	// gcom is the estimated COM in world coordinate
+    this->Fgcomy[0]	= gcomy;	// gcom is the estimated COM in world coordinate
     double speedy	= (this->Fgcomy[0]-gcom_oldy)/TsCart;
 
     this->Fgcomx[1]=speedx;
@@ -125,12 +127,16 @@ double gcom_old,gdcom_old,gcom_oldy,gdcom_oldy=0;
 
     return returnvector;
 }
-std::vector<double> DynamicWalkClass::filterdata2(double alfa,double alfad,double beta,double betad){
-    std::vector<double> returnvector(4,0);
-    returnvector[0]   = Filteralfa.applyFilter  (alfa);
-    returnvector[1]   = Filteralfad.applyFilter  (alfad);
-    returnvector[2]   = Filterbeta.applyFilter  (beta);
-    returnvector[3]   = Filterbetad.applyFilter  (betad);
+Eigen::VectorXd DynamicWalkClass::filterCOP(double COPX,double COPY){
+    Eigen::VectorXd returnvector(2);
+    returnvector[0]   = FilterCOPX.applyFilter  (COPX);
+    returnvector[1]   = FilterCOPY.applyFilter  (COPY);
+    return returnvector;
+}
+Eigen::VectorXd DynamicWalkClass::filterDHIP(double HIPX,double HIPY){
+    Eigen::VectorXd returnvector(2);
+    returnvector[0]   = FilterDeltaHIPX.applyFilter  (HIPX);
+    returnvector[1]   = FilterDeltaHIPY.applyFilter  (HIPY);
     return returnvector;
 }
 Eigen::VectorXd DynamicWalkClass::filterdatazmp(double lzmpx,double rzmpx,double lzmpy,double rzmpy){
@@ -145,7 +151,6 @@ Eigen::VectorXd DynamicWalkClass::filterdatazmp(double lzmpx,double rzmpx,double
     returnvector[5]   = 0;
     return returnvector;
 }
-
 void DynamicWalkClass::initStructure(double gcomx[3],double gcomy[3],double zmpyref,double clearance){
 
         this->ZMPstructure.stop=0;
@@ -397,7 +402,8 @@ void DynamicWalkClass::ZMP_MPC(double xfinal,double gcomx[3],double gcomy[3],dou
     //  for the hip and feet
     // initialize variables
 
-    double z_c=this->ZMPstructure.z_c;
+
+    double z_c=0.61;//this->ZMPstructure.z_c;
 
     double ezmpy=0;
     double ggg=9.81;
@@ -421,12 +427,12 @@ void DynamicWalkClass::ZMP_MPC(double xfinal,double gcomx[3],double gcomy[3],dou
 
     //real feedbacks
     //feet trajectory generation
-    x_cart[0]=gcomx[0]; // position
+    //x_cart[0]=gcomx[0]; // position
     x_cart[1]=gcomx[1];     // velocity
-//    x_cart[2]=gcomx[2];     // acceleration
+    //x_cart[2]=gcomx[2];     // acceleration
 
-     y_cart[0]=gcomy[0];
-     y_cart[1]=gcomy[1];
+//     y_cart[0]=gcomy[0];
+//     y_cart[1]=gcomy[1];
 //     y_cart[2]=gcomy[2];
 
     // updates
@@ -444,24 +450,59 @@ void DynamicWalkClass::ZMP_MPC(double xfinal,double gcomx[3],double gcomy[3],dou
     if(this->ZMPstructure.walkingcase!=5 && this->ZMPstructure.stop!=-1)
         feetUpdate();
 
-    if(this->ZMPstructure.stop==-1){
-        this->ZMPstructure.LFZ=0;
-        this->ZMPstructure.RFZ=0;
-    }
+//    if(this->ZMPstructure.stop==-1){
+//        this->ZMPstructure.LFZ=0;
+//        this->ZMPstructure.RFZ=0;
+//    }
+
+
+
+//    for(int k=0;k<N2; k++){
+//       Wty[k]=this->ZMPstructure.zmpy[k];
+//   }
+//   double  Yty=0;
+//   for(int k=0;k<3; k++){
+//       Yty+=sysdC[k]*y_cart[k];
+//   }
+
+//   controlMY.MPC( Yty, Wty);
+//   double uy=controlMY.U[N2];
+//   double Py[3]={0,0,0};
+//   for(int k=0; k<3; k++){
+//       double yTemp=0;
+//       for(int i=0; i<3; i++){
+//           yTemp+=sysdA[k][i] * gcomy[i];
+//       }
+//       Py[k] = yTemp + sysdB[k] * uy;
+//       }
+//   Yty=0;
+//   for(int k=0;k<3; k++){
+//       Yty+=sysdC[k]*Py[k];
+//   }
+//   Py[2]=controlMY.saturate(Yty,this->ZMPstructure.zmpy[0],y_cart[0],z_c,this->ZMPstructure.footEdgeY);
+//   double uysat=(Py[2]-y_cart[2])/TsCart;
+//   for(int k=0; k<3; k++){
+//       double yTemp=0;
+//       for(int i=0; i<3; i++){
+//           yTemp+=sysdA[k][i] * y_cart[i];
+//       }
+//       y_active[k] = yTemp+ sysdB[k] * uysat;
+//   }
+//   controlMY.U[N2]=uysat;
+
 
     std::vector<double> zmpy1;
     for (int i=0;i<N2;i++){
         zmpy1.push_back(this->ZMPstructure.zmpy[i]);
     }
-
-     double uysat=controlP.previewControl(gcomy,y_cart,sysdA,sysdB,sysdC,zmpy1,this->ZMPstructure.footEdgeY,TsCart,this->ZMPstructure.z_c);
-     for(int k=0; k<3; k++){
-         double xTemp=0;
-         for(int i=0; i<3; i++){
-             xTemp+=sysdA[k][i] * y_cart[i];
-         }
-         y_active[k] = xTemp+ sysdB[k] * uysat;
-     }
+    double uysat=controlP.previewControl(gcomy,y_cart,sysdA,sysdB,sysdC,zmpy1,this->ZMPstructure.footEdgeY,TsCart,this->ZMPstructure.z_c);
+    for(int k=0; k<3; k++){
+        double xTemp=0;
+        for(int i=0; i<3; i++){
+            xTemp+=sysdA[k][i] * y_cart[i];
+        }
+        y_active[k] = xTemp+ sysdB[k] * uysat;
+    }
 
      for(int k=0;k<N2; k++){
         Wt[k]=this->ZMPstructure.zmpx[k];
@@ -492,9 +533,9 @@ void DynamicWalkClass::ZMP_MPC(double xfinal,double gcomx[3],double gcomy[3],dou
         for(int i=0; i<3; i++){
             xTemp+=sysdA[k][i] * x_cart[i];
         }
-        x_active[k] = xTemp+ sysdB[k] * uxsat;
+        x_active[k] = xTemp+ sysdB[k] * uxsat*1.2;
     }
-    controlM.U[N2]=uxsat;
+    controlM.U[N2]=uxsat*1.2;
 
 
 
@@ -624,7 +665,7 @@ void DynamicWalkClass::footReference(){
         this->ZMPstructure.footChange=1;
         this->ZMPstructure.position=this->ZMPstructure.desirexf;
         this->ZMPstructure.stepCount=this->ZMPstructure.stepCount+1;
-
+        relativeflag=0;
     }
     else if  (this->ZMPstructure.goRight){
         /*this->ZMPstructure.RFY=RF[1];
@@ -635,7 +676,7 @@ void DynamicWalkClass::footReference(){
         this->ZMPstructure.footChange=1;
         this->ZMPstructure.position=this->ZMPstructure.desirexf;
         this->ZMPstructure.stepCount=this->ZMPstructure.stepCount+1;
-
+        relativeflag=1;
     }
 }
 void DynamicWalkClass::feetUpdate(){
@@ -681,7 +722,12 @@ void DynamicWalkClass::zmpTrajectory(double Tc,double xfinal){
     std:vector<double> tempZMP(zmpref2.preview_window);
     //compute the saggital local distace of the COM respect to the stance foot
     double Xposition=(this->ZMPstructure.actualPos-this->ZMPstructure.footPosition);
-
+//    if (relativeflag){
+//        Xposition=relativepos[0];
+//    }
+//        else if(!relativeflag){
+//        Xposition=relativepos[1];
+//    }
     bool reactive=(pow(this->ZMPstructure.actualSpeed,2)>pow(this->ZMPstructure.footEdgex,2)*9.81/this->ZMPstructure.z_c) || (this->ZMPstructure.actualPos>this->ZMPstructure.footPosition+this->ZMPstructure.footEdgex*2);
 
 
@@ -747,7 +793,6 @@ void DynamicWalkClass::zmpTrajectory(double Tc,double xfinal){
 
    }
 
-
     switch (walkingcase){
         case 1:
             //if the system was waking back a change of references is requiered due to the direction change
@@ -757,7 +802,7 @@ void DynamicWalkClass::zmpTrajectory(double Tc,double xfinal){
             else if(this->ZMPstructure.goRight==1 && this->ZMPstructure.desirexf<0){
                 this->ZMPstructure.rightFoot=this->ZMPstructure.footPosition-this->ZMPstructure.position;
             }
-            
+
             //if the trajectory generation is already over the xfinal do a smaller step and stop the
             //dynamic of the motion (desired final position:stance foot, desire final speed:0)
             if (this->ZMPstructure.stop==3 || this->ZMPstructure.stop==2){
@@ -963,6 +1008,7 @@ void DynamicWalkClass::zmpTrajectory(double Tc,double xfinal){
 //                    if(!reactive && this->ZMPstructure.actualPos<(this->ZMPstructure.footPosition+0.03) && this->ZMPstructure.actualSpeed<0.05){
 //                       this->ZMPstructure.stop=0;
 //                       this->ZMPstructure.stepCount=0;}
+
             }
              for (int i=0;i<this->ZMPstructure.zmpLength;i++){
                 this->ZMPstructure.zmpx[i]=tempZMP[i];

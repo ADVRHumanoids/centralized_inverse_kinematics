@@ -167,21 +167,12 @@ void centralized_inverse_kinematics_thread::run()
     {
         /** Sense **/
 
-        double stepLength=0.10;
-        double stepTime=0.8;
-        double stepLengthy=ik_problem->DynamicWalk.HALF_HIP_WIDTH;
-        double z_c=1;
-        double zmpyref=ik_problem->DynamicWalk.HALF_HIP_WIDTH;
-        double DSPhasePercent=0.2;
-        double footEdgex=0.2;
-        double clearance=0.06;
-        double xFinal=0;
         RobotUtils::ftReadings ft_readings = robot.senseftSensors();
 
         std::vector<double> comInfo(6);
-        comInfo = ik_problem->comStabilizer.filterdata(
-                    _robot_real.iDyn3_model.getCOM()[0],
-                    _robot_real.iDyn3_model.getCOM()[1], get_thread_period());
+        comInfo = ik_problem->DynamicWalk.filterdata(
+                    _robot_real.iDyn3_model.getCOM()[0]-ik_problem->comStabilizer.offset,
+                    _robot_real.iDyn3_model.getCOM()[1]-ik_problem->comStabilizery.offset, get_thread_period());
 
         std::vector<double> filterAngPitch(2,0);
         std::vector<double> filterAngRoll(2,0);
@@ -229,7 +220,6 @@ void centralized_inverse_kinematics_thread::run()
 
 
         if(ik_problem->reset_solver && ik_problem->homing_done){
-
 
             if(!ik_problem->start_walking_pattern){
                 ROS_INFO("PRESS A KEY TO START WALKING PATTERN GENERATOR");
@@ -281,34 +271,35 @@ void centralized_inverse_kinematics_thread::run()
                 fgcom[i] = comInfo[i];
                 fgcomy[i] = comInfo[i+3];
             }
-//            fgcom[0]=fgcom[0]-ik_problem->comStabilizer.offset;
-//            fgcom[3]=fgcom[3]-ik_problem->comStabilizery.offset;
+            if(TotalTime>=10 && TotalTime<10.2){
+                xFinal=10;
+                cout<<xFinal;
+            }
             ik_problem->DynamicWalk.UpdateStructure(stepLength,stepTime2,stepLengthy,z_c,zmpyref,DSPhasePercent,footEdgex);
             ik_problem->DynamicWalk.ZMP_preview(xFinal,fgcom,fgcomy,z_c);
             ik_problem->DynamicWalk.ZMPstructure.whichfoot=2;//irobot.WhichFoot;
+            TotalTime+=0.005;
 
             this->StabilizerCOP();
             yarp::sig::Vector CoMd = ik_problem->taskCoM->getReference();
 
-            CoMd(0) = ik_problem->DynamicWalk.x_active[0]+ik_problem->comStabilizer.offset+deltaHip_ODE[0];
-            //CoMd(1) = ik_problem->DynamicWalk.y_active[0];//+ik_problem->comStabilizery.offset;
-            cout<<ik_problem->DynamicWalk.x_active[0]<<"__"<<deltaHip_ODE[0]<<"    "<<ik_problem->DynamicWalk.y_active[0]<<"__"<<deltaHip_ODE[1]<<endl;
+            CoMd(0) = ik_problem->DynamicWalk.x_active[0]+deltaHip_ODE[0]+ik_problem->comStabilizer.offset;
+            CoMd(1) = ik_problem->DynamicWalk.y_active[0]+deltaHip_ODE[1];
             ik_problem->taskCoM->setReference(CoMd);
 
             yarp::sig::Matrix LFootReference(4,4); LFootReference = LFootReference.eye();
             LFootReference=ik_problem->taskLFoot->getReference();
-            LFootReference(0,3) = ik_problem->DynamicWalk.ZMPstructure.LFX;
+            LFootReference(0,3) = ik_problem->DynamicWalk.ZMPstructure.LFX-ik_problem->comStabilizer.offset+LFootoffset(0,3);
             LFootReference(1,3) = ik_problem->DynamicWalk.ZMPstructure.LFY-ik_problem->comStabilizery.offset;
-            LFootReference(2,3) = ik_problem->DynamicWalk.ZMPstructure.LFZ+0.1435;
-           // ik_problem->taskLFoot->setReference(LFootReference);
+            LFootReference(2,3) = ik_problem->DynamicWalk.ZMPstructure.LFZ+LFootoffset(2,3);
+            ik_problem->taskLFoot->setReference(LFootReference);
 
             yarp::sig::Matrix RFootReference(4,4); RFootReference = RFootReference.eye();
-//            RFootReference=ik_problem->taskRFoot->getReference();
-            RFootReference(0,3) = ik_problem->DynamicWalk.ZMPstructure.RFX;
+            RFootReference=ik_problem->taskRFoot->getReference();
+            RFootReference(0,3) = ik_problem->DynamicWalk.ZMPstructure.RFX-ik_problem->comStabilizer.offset+RFootoffset(0,3);
             RFootReference(1,3) = ik_problem->DynamicWalk.ZMPstructure.RFY-ik_problem->comStabilizery.offset;
-            RFootReference(2,3) = ik_problem->DynamicWalk.ZMPstructure.RFZ+0.1435;
-
-            //ik_problem->taskRFoot->setReference(RFootReference);
+            RFootReference(2,3) = ik_problem->DynamicWalk.ZMPstructure.RFZ+RFootoffset(2,3);
+            ik_problem->taskRFoot->setReference(RFootReference);
 
 
         // LOG DATA
@@ -329,7 +320,7 @@ void centralized_inverse_kinematics_thread::run()
         if(ik_problem->homing_done && !ik_problem->reset_solver)
         {
             qp_solver.reset();
-
+            TotalTime=0;
             ROS_WARN("RESET PROBLEM AND SOLVER");
             boost::shared_ptr<general_ik_problem::ik_problem> main_problem =
                     ik_problem->create_problem(_q, robot.idynutils, get_thread_period(), get_module_prefix());
@@ -340,6 +331,13 @@ void centralized_inverse_kinematics_thread::run()
                                                               main_problem->damped_least_square_eps));
             ik_problem->reset_solver = true;
             yarp::sig::Vector CoMd = ik_problem->taskCoM->getReference();
+
+            LFootoffset.resize(4,4); LFootoffset = LFootoffset.eye();
+            LFootoffset=ik_problem->taskLFoot->getReference();
+
+            RFootoffset.resize(4,4); RFootoffset = RFootoffset.eye();
+            RFootoffset=ik_problem->taskRFoot->getReference();
+
 
             for(int i=0;i<100;i++){
                 comInfo = ik_problem->comStabilizer.filterdata(
@@ -377,6 +375,15 @@ void centralized_inverse_kinematics_thread::run()
                 fgcom[i] = comInfo[i];
                 fgcomy[i] = comInfo[i+3];
             }
+            stepLength=0.1;
+            stepTime=1;
+            stepLengthy=ik_problem->DynamicWalk.HALF_HIP_WIDTH;
+            z_c=1;
+            zmpyref=ik_problem->DynamicWalk.HALF_HIP_WIDTH;
+            DSPhasePercent=0.2;
+            footEdgex=0.2;
+            clearance=0.06;
+            xFinal=0;
 
             ik_problem->DynamicWalk.Initialize(stepLength,stepTime,stepLengthy,z_c,zmpyref,DSPhasePercent,footEdgex);
             ik_problem->DynamicWalk.initStructure(fgcom,fgcomy,zmpyref,clearance);
@@ -501,9 +508,6 @@ static Eigen::VectorXd RFTdata_in(6);
         RFTdata_in(i) = ft_right(i);
     }
 
-    static double forceTreshold = 40;
-  //   static double FTsensorHeight = ROBOT::g_ground_to_FT_sensor.Get(); // Sensor measuring part to top of metal plate + metal plate thickness + metal plate mounting part to bottomo of foot
-    static double zmpx=0, zmpy=0, lzmpx=0, lzmpy=0,lzmpz=0, rzmpx=0, rzmpy=0,rzmpz=0;
 
     static Eigen::VectorXd LFTdata = Eigen::VectorXd::Zero(LFTdata_in.rows());
     static Eigen::VectorXd RFTdata = Eigen::VectorXd::Zero(RFTdata_in.rows());
@@ -512,8 +516,6 @@ static Eigen::VectorXd RFTdata_in(6);
 
     static int cutOffFreqency = g_settings.filters_zmpCutOffFreq.Get();
     static Clpf<Eigen::VectorXd> LFTlpf(cutOffFreqency, ROBOT::g_motorControlLoopTime.Get()), RFTlpf(cutOffFreqency, ROBOT::g_motorControlLoopTime.Get());
-    cutOffFreqency = g_settings.filters_zmpCutOffFreq.Get();
-    static Clpf<Eigen::VectorXd> zmpLpf(cutOffFreqency, ROBOT::g_motorControlLoopTime.Get());
 
     LFTdata = LFTlpf.filter(LFTdata_in);
     RFTdata = RFTlpf.filter(RFTdata_in);
@@ -539,17 +541,21 @@ static Eigen::VectorXd RFTdata_in(6);
 
     worldToLFT = eigen2KDL(lAnkle) * ankleToFT;
     worldToRFT = eigen2KDL(rAnkle) * ankleToFT;
+    if (transformWrenchKDL(LFTdata, worldToLFT, &LFT_world) ) {
+      error.add("Error when calculating wrench in ZMP function");
+    }
+    if (transformWrenchKDL(RFTdata, worldToRFT, &RFT_world) ) {
+      error.add("Error when calculating wrench in ZMP function");
+    }
     Vector2d returnV(LFT_world(2),RFT_world(2));
+    return returnV;
 
 }
 void centralized_inverse_kinematics_thread::StabilizerCOP(){
     Vector3d CopPos_L,CopPos_R;
     double g=9.81;
-    yarp::sig::Matrix massMat;
-    _robot_real.iDyn3_model.getFloatingBaseMassMatrix(massMat);
-    double totalMass = massMat(0,0);
-    double Gmg=totalMass*g;
-    double Fzmin=10;
+    double Gmg=120*g;
+    double Fzmin=30;
     Eigen::VectorXd zmpOut;
     zmpOut=this->ZMPcalculation();
     CopPos_L(0)=ik_problem->DynamicWalk.ZMPstructure.zmpx[0]-ik_problem->DynamicWalk.ZMPstructure.LFX;
@@ -558,6 +564,7 @@ void centralized_inverse_kinematics_thread::StabilizerCOP(){
     CopPos_R(0)=ik_problem->DynamicWalk.ZMPstructure.zmpx[0]-ik_problem->DynamicWalk.ZMPstructure.RFX;
     CopPos_R(1)=ik_problem->DynamicWalk.ZMPstructure.zmpy[0]-ik_problem->DynamicWalk.ZMPstructure.RFY;
     CopPos_R(2)=0;
+
     Vector3d robotLzmp(zmpOut(0),zmpOut(1),zmpOut(2));
     Vector3d robotRzmp(zmpOut(3),zmpOut(4),zmpOut(5));
 
@@ -580,11 +587,11 @@ void centralized_inverse_kinematics_thread::StabilizerCOP(){
 
     deltaZMPx_old=deltaZMPx_ODE;
     deltaZMPy_old=deltaZMPy_ODE;
-//    deltaZMPx_ODE=COPX.applyFilter(cop_delta(0));
-//    deltaZMPy_ODE=COPY.applyFilter(cop_delta(1));
-    deltaZMPx_ODE=cop_delta(0);
-    deltaZMPy_ODE=cop_delta(1);
 
+    Eigen::VectorXd COPOut(2);
+    COPOut=ik_problem->DynamicWalk.filterCOP(cop_delta(0),cop_delta(1));
+    deltaZMPx_ODE=COPOut(0);
+    deltaZMPy_ODE=COPOut(1);
 
     double sum0ode=0;
     double sumode[4]={0};
@@ -605,30 +612,30 @@ void centralized_inverse_kinematics_thread::StabilizerCOP(){
         }
         dZMPODE[j]=sumode[j]/sum0ode;
     }
-    //std::cout<<"deltaHIP:"<<irobotDS.dt<<"   "<<sumode[1]<<std::endl;
-    FzODE[0]+=1*(Fzl-Fzmin -FzODE[0])*ts;//left
-    FzODE[1]+=1*(Fzr-Fzmin -FzODE[1])*ts;//right
+
+    FzODE[0]=1*(Fzl-Fzmin -FzODE[0])*ts;//left
+    FzODE[1]=1*(Fzr-Fzmin -FzODE[1])*ts;//right
+
     //2.5 not 1
-    double n1=(FzODE[0]+FzODE[1])/(Gmg*0.9);//normalized unit based on GRF/mg
+    double n1=(FzODE[0]+FzODE[1])/(Gmg);//normalized unit based on GRF/mg
     if(n1>1.2)
     {
         n1=1.2;
     }
-    else if(n1<0)
+    else if(n1<0.0)
     {
-        n1=0;
+        n1=0.0;
     }
     // Must normalize!!
 
     //---- stabilizer law: gain must < 1 to have negative feedback control
-    double Kx=0.1*n1;//Kx=0.2;
-    double Ky=0.2*n1;//Ky=0.4;
-    double Cx=-0.005*n1;//-0.01
-    double Cy= -0.01*n1;//-0.02
+    double Kx=0.2*n1;//Kx=0.2;
+    double Ky=0.4*n1;//Ky=0.4;
+    double Cx=-0.01*n1;//-0.01
+    double Cy= -0.02*n1;//-0.02
     /*-------------- here is the main law  -------------------*/
     deltaHip_ODE[0] = Kx*deltaZMPx_ODE +  Cx*dZMPODE[0];//delta hip x
-    deltaHip_ODE[1] = Ky*deltaZMPy_ODE +  Cy*dZMPODE[1];//delta hip y
-
+    deltaHip_ODE[1] = Ky*0.2*deltaZMPy_ODE +  Cy*0.2*dZMPODE[1];//delta hip y
 
         double Fext= 1-(Fzl+Fzr)/Gmg;
         double Kz = 12; // normalized stiffness
@@ -664,13 +671,19 @@ void centralized_inverse_kinematics_thread::StabilizerCOP(){
         {
             deltaHip_ODE[0]=-0.10;
         }
-        if (deltaHip_ODE[1]>0.15)
+        if (deltaHip_ODE[1]>0.1)
         {
-            deltaHip_ODE[1]=0.15;
+            deltaHip_ODE[1]=0.1;
         }
-        else if (deltaHip_ODE[1]<-0.15)
+        else if (deltaHip_ODE[1]<-0.1)
         {
-            deltaHip_ODE[1]=-0.15;
+            deltaHip_ODE[1]=-0.1;
         }
+        Eigen::VectorXd HIPOut(2);
+        HIPOut=ik_problem->DynamicWalk.filterDHIP(deltaHip_ODE[0],deltaHip_ODE[1]);
+        deltaHip_ODE[0]=HIPOut(0);
+        deltaHip_ODE[1]=HIPOut(1);
+
+
 }
 
