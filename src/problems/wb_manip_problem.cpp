@@ -48,7 +48,7 @@ boost::shared_ptr<wb_manip_problem::ik_problem> wb_manip_problem::create_problem
 
             /** 3.2) We are interested only in the orientation of the torso **/
             OpenSoT::SubTask::Ptr taskTorsoOrientation(OpenSoT::SubTask::Ptr(
-                                new OpenSoT::SubTask(taskTorso, OpenSoT::SubTask::SubTaskMap::range(3,5))));
+                                new OpenSoT::SubTask(taskTorso, OpenSoT::Indices::range(3,5))));
 
 
         /** 2) Cartesian RSole **/
@@ -59,7 +59,7 @@ boost::shared_ptr<wb_manip_problem::ik_problem> wb_manip_problem::create_problem
         taskWaist->setOrientationErrorGain(0.5);
             /** 3.2) We are interested only in the orientation**/
             OpenSoT::SubTask::Ptr taskWaistOrientation(OpenSoT::SubTask::Ptr(
-                                new OpenSoT::SubTask(taskWaist, OpenSoT::SubTask::SubTaskMap::range(3,5))));
+                                new OpenSoT::SubTask(taskWaist, OpenSoT::Indices::range(3,5))));
 
         /** 3) Minimize Joint Acc **/
         MinimizeAcceleration::Ptr taskMinimizeAcceleration(MinimizeAcceleration::Ptr(new MinimizeAcceleration(state)));
