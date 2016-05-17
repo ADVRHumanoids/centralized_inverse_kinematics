@@ -172,21 +172,16 @@ void centralized_inverse_kinematics_thread::run()
                     _robot_real.iDyn3_model.getCOM()[0],
                     _robot_real.iDyn3_model.getCOM()[1], get_thread_period());
 
+        ik_problem->controlPitch.controlFlag = 1;
+        ik_problem->controlRoll.controlFlag = 1;
+        ik_problem->controlPitch.alfa=0;
+        ik_problem->controlRoll.alfa=0;
+
         std::vector<double> filterAngPitch(2,0);
         std::vector<double> filterAngRoll(2,0);
         yarp::sig::Vector imu = imuIFace->sense();
         filterAngPitch = ik_problem->controlPitch.filterdata2(imu(1)-ik_problem->controlPitch.offset, imu(7));
         filterAngRoll = ik_problem->controlRoll.filterdata2(imu(0)-ik_problem->controlRoll.offset, imu(6));
-
-        ik_problem->controlPitch.controlFlag = 1;
-        ik_problem->controlRoll.controlFlag = 1;
-        ik_problem->controlPitch.alfa=0;
-        ik_problem->controlRoll.alfa=0.5;
-
-        ik_problem->zmpBalance.controlFlag=1;
-        ik_problem->zmpBalancey.controlFlag=1;
-        ik_problem->zmpBalance.alfa=0.5;
-
 
 
         ik_problem->controlPitch.States<<filterAngPitch[0],filterAngPitch[1];
@@ -202,7 +197,15 @@ void centralized_inverse_kinematics_thread::run()
         double Pitch=ik_problem->controlPitch.apply(refPitch);
         double Roll=ik_problem->controlRoll.apply(refRoll);
         Hiprotation = Ry(Pitch);
-         Hiprotation=Hiprotation*Rx(Roll);
+        Hiprotation=Hiprotation*Rx(Roll);
+
+        //ik_problem->zmpBalance.controlFlag=1;
+        //ik_problem->zmpBalancey.controlFlag=1;
+        //ik_problem->zmpBalance.alfa=0.5;
+
+
+
+
         yarp::sig::Vector q_measured(_q.size(), 0.0);
         robot.sense(q_measured, _dq, _tau);
         if(_is_clik)
@@ -266,7 +269,7 @@ void centralized_inverse_kinematics_thread::run()
             double CoMdy = hipcontroly*0.8 + hipOffset[1];
 
             yarp::sig::Vector CoMd = ik_problem->taskCoM->getReference();
-            CoMd(0) = CoMdx;
+           // CoMd(0) = CoMdx;
 //             CoMd(1) = ik_problem->zmpBalancey.offsety-CoMdy;
             ik_problem->taskCoM->setReference(CoMd);
 

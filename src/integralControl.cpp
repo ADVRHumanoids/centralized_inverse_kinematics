@@ -36,15 +36,24 @@ IntegralControl::IntegralControl()
     this->sizeA=3;
     this->sizeB=3;
     this->sizeC=2;
-    this->sizeD=2;
+    this->sizeD=4;
     this->States<<0,0;
     this->Ampc.resize(this->sizeA);
     this->Bmpc.resize(this->sizeB);
     this->Cmpc.resize(this->sizeC);
     this->Dmpc.resize(this->sizeD);
     /*TF IN discrete time for a second order integrator*/
-    this->Ampc<<1, -2, 1;
-    this->Bmpc<<0,pow(sampletime,2)/2,pow(sampletime,2)/2;
+
+    double m=40;
+    double z_c=1;
+    double Inertia=1/(m*pow(z_c,2));
+    this->A<<1,this->sampletime,
+            0,1;
+    this->B<<pow(this->sampletime,2)/2*Inertia,
+            this->sampletime*Inertia;
+
+   // this->Ampc<<1, -2, 1;
+   // this->Bmpc<<0,pow(sampletime,2)/2,pow(sampletime,2)/2;
     /*LOW PASS FILTER (
      *
      * [H,I]=butter(1,[0.001 0.9])
@@ -55,8 +64,8 @@ IntegralControl::IntegralControl()
 
 
 //    double k=0.01;
-     this->Cmpc<<0.0,1.0;
-     this->Dmpc<<1.0000  , -1.0;
+     this->Cmpc<<1,1.0;
+     this->Dmpc<<1.0000  ,-3,3, -1.0;
 
 //    this->Cmpc<<0.9006 ,  -0.9006;
 //    this->Dmpc<<1.0000  , -0.8012;
@@ -172,8 +181,8 @@ IntegralControl::~IntegralControl(){}
 void IntegralControl::initfilters(){
     Filteralfa.butterworth   (TsCart,this->freq*1,1);
     Filteralfad.butterworth   (TsCart,this->freq*1,1);
-    outFilter.butterworth   (TsCart,this->freq*0.1,1);
-    stateFilter.butterworth   (TsCart,this->freq*0.05,1);
+    outFilter.butterworth   (TsCart,this->freq*1,1);
+    stateFilter.butterworth   (TsCart,this->freq*0.5,1);
 
     for (int i=1;i<30;i++)
         outFilter.applyFilter(0);
@@ -341,7 +350,7 @@ void IntegralControl::MPC(double Yt,double *Wt){
 
     }
 
-    X[N2]=Yt; // SERIE-PARALELO
+    //X[N2]=Yt; // SERIE-PARALELO
     // 7= New control input U=U+ inv(G'*G)*G'*Err
     double Ref[N2+1];
     Ref[0]=Yt;
@@ -466,7 +475,7 @@ VectorXd IntegralControl::saturateMPC(double *Err, double *Ybase,std::vector<dou
     VectorXd f(Nu);
     VectorXd eta(Nu);
     f=this->F*Error;
-    eta=-this->invH*f;
+    eta=-(this->invH)*f;
 
     int kk=0;
     double evalConstraint;

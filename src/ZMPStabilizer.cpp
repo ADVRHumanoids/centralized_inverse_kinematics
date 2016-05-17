@@ -56,10 +56,11 @@ ZMPStabilizer::ZMPStabilizer()
      * [H,I]=butter(1,[0.001 0.9])
      *
      * )*/
-    this->Cmpc<<0.3375,0,-0.3375
-;
+    this->Cmpc<< 0.0929 , 0 ,-0.0929;
+    this->Dmpc<<1.0000,-1.7828,0.8141;
+//    this->Cmpc<<0.3375,0,-0.3375;
 
-    this->Dmpc<<1.0000,-0.6751 ,0.3249;
+//    this->Dmpc<<1.0000,-0.6751 ,0.3249;
 
     /*Initializations*/
     this->X.resize(N2+sizeA+1)	;
