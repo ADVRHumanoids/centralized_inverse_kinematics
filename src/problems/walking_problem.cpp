@@ -268,7 +268,7 @@ boost::shared_ptr<walking_problem::ik_problem> walking_problem::homing_problem(c
         active_joint_mask[robot_model.left_leg.joint_numbers[i]] = false;
     taskTorso->setActiveJointsMask(active_joint_mask);
     OpenSoT::SubTask::Ptr subTaskTorso = OpenSoT::SubTask::Ptr(
-        new OpenSoT::SubTask(taskTorso, OpenSoT::SubTask::SubTaskMap::range(3,5)));
+        new OpenSoT::SubTask(taskTorso, OpenSoT::Indices::range(3,5)));
 
     taskPostural.reset(new Postural(state));
     yarp::sig::Vector q_postural(state.size(), 0.0);
